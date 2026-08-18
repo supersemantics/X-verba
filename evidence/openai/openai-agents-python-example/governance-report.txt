@@ -1,0 +1,164 @@
+════════════════════════════════════════════════════════════════════════════════
+X-VERBA SCAN RESULTS
+════════════════════════════════════════════════════════════════════════════════
+
+Repository:  C:\Users\OEM\AppData\Local\Temp\claude\H--Claude-Code-Building-CLI-Tool\d7566a6d-1d22-462a-a734-0028b91175ea\scratchpad\public_repos\openai-agents-python-example
+Scan Date:   2026-08-17T19:42:01.086927+00:00
+
+════════════════════════════════════════════════════════════════════════════════
+GOVERNANCE SCORECARD
+════════════════════════════════════════════════════════════════════════════════
+
+Structural Gamma:                  0.33 / 1.0  [BELOW_THRESHOLD]
+  (33% of governance-relevant decision points have an observable governance checkpoint.)
+  ├─ Total Decision Points:        30
+  ├─ Governed Decision Points:     10 (33%)
+  └─ Ungoverned Decision Points:   20 (67%)
+
+Tendency State:                     AMPLIFYING
+  ├─ T-Amplification Active:       No (8 high-centrality ungoverned decisions)
+  └─ Pre-Node Proximity:           LOW (<10% of critical decisions ungoverned)
+  Note: Tendency driven primarily by: high ungoverned decision density.
+
+════════════════════════════════════════════════════════════════════════════════
+AI VISIBILITY
+════════════════════════════════════════════════════════════════════════════════
+
+AI Integrations Detected:          43
+  ├─ Governed:                     0 (0%)
+  ├─ Ungoverned:                   43 (100%)
+  └─ High-Risk Patterns:           0 (high temperature + user input + dynamic prompt)
+
+Candidate Governance Nodes:        43  (X-Verba inferences — confirm or correct in governance contract)
+
+Providers:
+  ├─ Openai_Agents_Sdk          42
+  └─ Openai                     1
+
+AI-Related Drift Class Findings:    1
+  └─ DC-I11                     1
+
+════════════════════════════════════════════════════════════════════════════════
+AGENT VISIBILITY
+════════════════════════════════════════════════════════════════════════════════
+
+Agents Detected:                    0
+Agent Handovers Detected:           0
+  ├─ Governed:                     0 (0%)
+  └─ Ungoverned:                   0 (0%)
+
+Agent Chains:                        0
+  ├─ Fully Governed:               0
+  ├─ Partially Governed:           0
+  └─ Ungoverned:                   0
+
+Agent Clusters:                      0
+  ├─ Cluster Risk (Avg Chain Risk): 0.00
+  └─ Cluster Governance Gaps:      0 (0 with 2+ ungated handovers)
+
+════════════════════════════════════════════════════════════════════════════════
+DECISION VISIBILITY
+════════════════════════════════════════════════════════════════════════════════
+
+Decision Points Detected:            77
+  ├─ Low Consequence          0 (0%)
+  ├─ Medium Consequence       0 (0%)
+  ├─ High Consequence         77 (100%)
+  └─ Critical Consequence     0 (0%)
+
+Governance by Consequence Type:
+  ├─ state_mutation (27):  7 governed, 20 ungoverned
+  └─ agent_invocation (5):  3 governed, 2 ungoverned
+
+Decision Influence Ranking (PageRank):
+  ├─ Most Influential Decision:   display.py:57 (score=0.013812, criticality=0.50)
+  └─ Governance Choke Point:      display.py:59 (score=0.013583, ungoverned)
+
+════════════════════════════════════════════════════════════════════════════════
+GOVERNANCE COVERAGE
+════════════════════════════════════════════════════════════════════════════════
+
+Overall Coverage:                    31%
+
+Coverage by Decision Type:
+  ├─ conditional_branch       30%
+  ├─ function_call            36%
+  ├─ loop                     25%
+  └─ ternary                  25%
+
+Coverage by Checkpoint Type:
+  ├─ Control Flow             8 decisions
+  └─ Caller Guard             2 decisions
+
+Critical Decision Coverage:
+  ├─ Critical Decisions:           0
+  ├─ Governed:                     0 (0%)
+  └─ Ungoverned:                   0 (0%)
+
+════════════════════════════════════════════════════════════════════════════════
+CRITICAL FINDINGS
+════════════════════════════════════════════════════════════════════════════════
+
+No critical-severity decision point gaps detected.
+
+════════════════════════════════════════════════════════════════════════════════
+GOVERNANCE GAPS SUMMARY
+════════════════════════════════════════════════════════════════════════════════
+
+Critical Governance Gaps:            28
+  └─ Missing Pre Node             28
+
+High Governance Gaps:                43
+Medium Governance Gaps:              22
+
+Agent Handover Gaps:                 0 / 0 ungoverned
+Cluster Governance Gaps:             0
+Terminal States (Silent Failures):   1
+
+════════════════════════════════════════════════════════════════════════════════
+GOVERNANCE THEATRE
+════════════════════════════════════════════════════════════════════════════════
+
+No governance theatre detected.
+
+════════════════════════════════════════════════════════════════════════════════
+DRIFT CLASS DETECTIONS
+════════════════════════════════════════════════════════════════════════════════
+
+DC-E13 — Propagating Corruption                2 detection(s)  (HIGH 1, MEDIUM 1)
+DC-I11 — Evaluative Decoupling                 1 detection(s)  (MEDIUM 1)
+DC-S3 — Emergent Misalignment                 1 detection(s)  (HIGH 1)
+
+Behavioural Domains Affected:
+  ├─ AI                       3 detection(s)
+  └─ Multi-Agent / Cluster    1 detection(s)
+
+════════════════════════════════════════════════════════════════════════════════
+GOVERNANCE RECOMMENDATIONS
+════════════════════════════════════════════════════════════════════════════════
+
+Immediate Actions (Critical): 28 items
+  1. Define what must be checked before this AI call. What conditions must be met? What must the AI never return? — orchestrator.py:97
+  2. Define what must be checked before this AI call. What conditions must be met? What must the AI never return? — orchestrator.py:122
+  3. Define what must be checked before this AI call. What conditions must be met? What must the AI never return? — orchestrator.py:101
+  4. Define what must be checked before this AI call. What conditions must be met? What must the AI never return? — orchestrator.py:102
+  5. Define what must be checked before this AI call. What conditions must be met? What must the AI never return? — orchestrator.py:105
+
+Short-term (High): 43 items
+  1. Define the severity and required authorisation level for this output. — main.py:13
+  2. Define the severity and required authorisation level for this output. — main.py:14
+  3. Define the severity and required authorisation level for this output. — orchestrator.py:97
+  4. Define the severity and required authorisation level for this output. — orchestrator.py:122
+  5. Define the severity and required authorisation level for this output. — orchestrator.py:128
+
+Medium-term (Medium): 0 items
+  (none)
+
+Implementation order is based on:
+  - Decision criticality (business_impact x blast_radius x irreversibility)
+  - PageRank (most influential decisions first)
+  - Severity (critical > high > medium)
+
+════════════════════════════════════════════════════════════════════════════════
+End of Report
+════════════════════════════════════════════════════════════════════════════════

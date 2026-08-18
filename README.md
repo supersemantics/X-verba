@@ -39,18 +39,40 @@ import analysis in Python, call-pattern matching in JS/TS, and (as a fallback,
 only when nothing else matches) a known-hostname check for raw HTTP calls with
 no SDK at all.
 
-[![OpenAI](https://img.shields.io/badge/OpenAI-supported-412991?logo=openai&logoColor=white)](https://github.com/openai/openai-python)
-[![Anthropic](https://img.shields.io/badge/Anthropic-supported-D4A27F?logo=anthropic&logoColor=white)](https://github.com/anthropics/anthropic-sdk-python)
-[![Google Gemini](https://img.shields.io/badge/Google_Gemini-supported-4285F4?logo=google&logoColor=white)](https://github.com/googleapis/python-genai)
-[![Cohere](https://img.shields.io/badge/Cohere-supported-39594D)](https://github.com/cohere-ai/cohere-python)
-[![AWS Bedrock](https://img.shields.io/badge/AWS_Bedrock-supported-FF9900?logo=amazonwebservices&logoColor=white)](https://github.com/boto/boto3)
-[![Mistral](https://img.shields.io/badge/Mistral-supported-FA520F)](https://github.com/mistralai/client-python)
-[![Perplexity](https://img.shields.io/badge/Perplexity-supported-1FB8CD)](https://github.com/ppl-ai/api-discussion)
-[![OpenRouter](https://img.shields.io/badge/OpenRouter-supported-6467F2)](https://github.com/OpenRouterTeam/openrouter-runner)
-[![xAI](https://img.shields.io/badge/xAI-supported-000000)](https://github.com/xai-org/xai-sdk-python)
-[![Replicate](https://img.shields.io/badge/Replicate-supported-000000)](https://github.com/replicate/replicate-python)
-[![Hugging Face](https://img.shields.io/badge/Hugging_Face-supported-FFD21E?logo=huggingface&logoColor=black)](https://github.com/huggingface/transformers)
-[![Meta Llama](https://img.shields.io/badge/Meta_Llama-supported-0467DF)](https://github.com/meta-llama/llama-stack-client-python)
+**By default, X-Verba scans for OpenAI (including the OpenAI Agents SDK),
+LangChain, and LangGraph only.** These get the most scrutiny — every
+detection pattern has been audited against real confirmed false positives
+(a Twilio SMS call mistaken for an Anthropic call, a NetworkX graph
+mistaken for a LangGraph one, an insurance-claims "agent" object mistaken
+for a LangChain agent — see [CHANGELOG](CHANGELOG.md) for the full list)
+and paired with a regression test locking the fix in. Narrower scope, but
+what it reports is held to a higher bar.
+
+[![OpenAI](https://img.shields.io/badge/OpenAI-default_scope-412991?logo=openai&logoColor=white)](https://github.com/openai/openai-python)
+[![OpenAI Agents SDK](https://img.shields.io/badge/OpenAI_Agents_SDK-default_scope-412991?logo=openai&logoColor=white)](https://github.com/openai/openai-agents-python)
+[![LangChain](https://img.shields.io/badge/LangChain-default_scope-1C3C3C)](https://github.com/langchain-ai/langchain)
+[![LangGraph](https://img.shields.io/badge/LangGraph-default_scope-1C3C3C)](https://github.com/langchain-ai/langgraph)
+
+Pass `--all-frameworks` to widen detection to every provider the engine
+recognises — these still have working detectors, just not (yet) held to
+the same precision bar as the three above:
+
+[![Anthropic](https://img.shields.io/badge/Anthropic---all--frameworks-D4A27F?logo=anthropic&logoColor=white)](https://github.com/anthropics/anthropic-sdk-python)
+[![Google Gemini](https://img.shields.io/badge/Google_Gemini---all--frameworks-4285F4?logo=google&logoColor=white)](https://github.com/googleapis/python-genai)
+[![Cohere](https://img.shields.io/badge/Cohere---all--frameworks-39594D)](https://github.com/cohere-ai/cohere-python)
+[![AWS Bedrock](https://img.shields.io/badge/AWS_Bedrock---all--frameworks-FF9900?logo=amazonwebservices&logoColor=white)](https://github.com/boto/boto3)
+[![Mistral](https://img.shields.io/badge/Mistral---all--frameworks-FA520F)](https://github.com/mistralai/client-python)
+[![Perplexity](https://img.shields.io/badge/Perplexity---all--frameworks-1FB8CD)](https://github.com/ppl-ai/api-discussion)
+[![OpenRouter](https://img.shields.io/badge/OpenRouter---all--frameworks-6467F2)](https://github.com/OpenRouterTeam/openrouter-runner)
+[![xAI](https://img.shields.io/badge/xAI---all--frameworks-000000)](https://github.com/xai-org/xai-sdk-python)
+[![Replicate](https://img.shields.io/badge/Replicate---all--frameworks-000000)](https://github.com/replicate/replicate-python)
+[![Hugging Face](https://img.shields.io/badge/Hugging_Face---all--frameworks-FFD21E?logo=huggingface&logoColor=black)](https://github.com/huggingface/transformers)
+[![Meta Llama](https://img.shields.io/badge/Meta_Llama---all--frameworks-0467DF)](https://github.com/meta-llama/llama-stack-client-python)
+
+```bash
+x-verba scan ./my-repo                  # OpenAI, LangChain, LangGraph only
+x-verba scan ./my-repo --all-frameworks # every provider above
+```
 
 ### Agentic Framework Support
 
@@ -60,6 +82,13 @@ pattern each one uses. A framework can appear in more than one group — several
 ship multiple coordination APIs in the same codebase (AutoGen and Semantic
 Kernel both do). Every entry was verified against that framework's own real
 source code, not inferred from documentation.
+
+Unlike AI-provider detection above, handover detection runs on **structural
+shape**, not framework identity — e.g. the graph/builder-edges group below
+detects LangGraph, Microsoft Agent Framework, AutoGen, and Haystack through
+one shared pattern (`add_node()`/`add_edge()`), not four separate
+per-framework checks. It isn't affected by `--all-frameworks` and always
+runs at full breadth, regardless of scan scope.
 
 **Graph / builder edges** — `add_node()` / `add_edge()` (or an equivalent fluent edge-builder) declaring a directed graph of agents/steps.
 
@@ -743,6 +772,7 @@ x-verba scan ./my-repo
 x-verba scan ./my-repo --format json
 x-verba scan ./my-repo --identity-key my-system-v1.0
 x-verba scan ./my-repo --focus src/critical/
+x-verba scan ./my-repo --all-frameworks  # widen beyond OpenAI/LangChain/LangGraph
 ```
 
 ### `x-verba qa`

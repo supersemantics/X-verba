@@ -936,6 +936,389 @@ class TestLegionSchema:
         assert len(result3) == 2
 
 
+# ── Framework-detection precision: LangChain / LangGraph / OpenAI / Anthropic ──
+#
+# Regression coverage for the false-positive and coverage-gap fixes made to
+# engine.py's AI_CALL_METHODS / AGENT_FRAMEWORK_PATTERNS / JS_AI_PATTERNS
+# matching. Each "false positive" case is real, confirmed code that isn't
+# actually LangChain/LangGraph/OpenAI/Anthropic but shares a call shape with
+# it; each "true positive" case is genuine framework usage that must keep
+# working once the false-positive fix is in place.
+
+class TestFrameworkDetectionPrecision:
+
+    def _scan(self, tmp_path, filename: str, content: str) -> dict:
+        (tmp_path / filename).write_text(content, encoding="utf-8")
+        return ScanEngine().scan(str(tmp_path))
+
+    def _providers(self, results: dict) -> list:
+        return [a["provider"] for a in results["primitives"]["ai_integrations"]]
+
+    def _agent_frameworks(self, results: dict) -> list:
+        return [
+            d["framework"] for d in results["primitives"]["decision_points"]
+            if d.get("type") == "agent_invocation"
+        ]
+
+    # ── LangChain — Python ─────────────────────────────────────────────
+
+    def test_supply_chain_run_pipeline_not_langchain(self, tmp_path):
+        """A variable named `supply_chain` calling .run_pipeline() must not
+        be misread as LangChain's chain.run — confirmed false positive from
+        raw substring matching (fixed via anchored _call_matches_pattern)."""
+        results = self._scan(tmp_path, "sample.py", '''
+class SupplyChain:
+    def run_pipeline(self):
+        return "done"
+
+supply_chain = SupplyChain()
+supply_chain.run_pipeline()
+''')
+        assert "langchain" not in self._providers(results)
+        assert "langchain" not in self._agent_frameworks(results)
+
+    def test_insurance_agent_not_langchain(self, tmp_path):
+        """A domain 'agent'/'chain' object (.run()/.invoke()) with no
+        LangChain import anywhere in the file must not be flagged —
+        confirmed false positive on ordinary insurance-claims code."""
+        results = self._scan(tmp_path, "insurance_agent.py", '''
+class InsuranceAgent:
+    def run(self, policy_id):
+        return f"processed {policy_id}"
+
+class ApprovalChain:
+    def invoke(self, request):
+        return "approved"
+
+def process_claim():
+    agent = InsuranceAgent()
+    agent.run("POL-123")
+    chain = ApprovalChain()
+    chain.invoke({"amount": 500})
+''')
+        assert "langchain" not in self._providers(results)
+        assert "langchain" not in self._agent_frameworks(results)
+
+    def test_real_langchain_still_detected(self, tmp_path):
+        """Genuine LangChain usage (AgentExecutor + agent.run/chain.invoke,
+        corroborated by a real langchain import) must still be detected —
+        guards against over-tightening the false-positive fixes above."""
+        results = self._scan(tmp_path, "real_langchain.py", '''
+from langchain.agents import AgentExecutor
+from langchain_openai import ChatOpenAI
+
+def run_assistant():
+    llm = ChatOpenAI()
+    agent = AgentExecutor(agent=llm, tools=[])
+    agent.run("What's the weather?")
+    chain = build_chain()
+    chain.invoke({"input": "hello"})
+''')
+        assert "langchain" in self._providers(results)
+        assert "langchain" in self._agent_frameworks(results)
+
+    # ── LangGraph — Python ─────────────────────────────────────────────
+
+    def test_networkx_not_langgraph(self, tmp_path):
+        """NetworkX's own add_node()/add_edge() API must not be misread as
+        LangGraph — confirmed false positive, same method names, unrelated
+        general-purpose graph library."""
+        results = self._scan(tmp_path, "networkx_sample.py", '''
+import networkx as nx
+
+def build_dependency_graph():
+    graph = nx.DiGraph()
+    graph.add_node("task_a")
+    graph.add_node("task_b")
+    graph.add_edge("task_a", "task_b")
+    return graph
+''')
+        assert "langgraph" not in self._agent_frameworks(results)
+
+    def test_real_langgraph_still_detected(self, tmp_path):
+        """Genuine LangGraph usage (StateGraph import present) must still
+        be detected."""
+        results = self._scan(tmp_path, "langgraph_sample.py", '''
+from langgraph.graph import StateGraph
+
+def build_agent_graph():
+    graph = StateGraph(dict)
+    graph.add_node("planner", planner_fn)
+    graph.add_node("executor", executor_fn)
+    graph.add_edge("planner", "executor")
+    return graph.compile()
+''')
+        frameworks = self._agent_frameworks(results)
+        assert frameworks.count("langgraph") == 4  # StateGraph + 2 add_node + add_edge
+
+    def test_langgraph_prebuilt_react_agent_detected(self, tmp_path):
+        """LangGraph's high-level `create_react_agent` (langgraph.prebuilt)
+        must be detected as langgraph — a real, popular usage pattern that
+        never touches StateGraph/add_node/add_edge directly. Confirmed
+        real-world miss: braincrew-lab/langgraph-mcp-agents uses only this
+        API and had zero langgraph decision points before this pattern was
+        added, despite the repo name and real LangGraph usage throughout."""
+        results = self._scan(tmp_path, "react_agent_sample.py", '''
+from langgraph.prebuilt import create_react_agent
+from langchain_openai import ChatOpenAI
+
+def build_agent():
+    model = ChatOpenAI()
+    agent = create_react_agent(model, tools=[])
+    return agent
+''')
+        assert "langgraph" in self._agent_frameworks(results)
+
+    def test_langgraph_swarm_detected(self, tmp_path):
+        """`create_swarm`/`create_handoff_tool` (the official
+        langgraph-ai/langgraph-swarm-py package's top-level API) must be
+        detected as langgraph. Confirmed real-world miss: the package's
+        own documented usage example — a downstream caller building a
+        swarm of agents with handoff tools, never touching
+        StateGraph/add_node directly — produced zero langgraph findings
+        before these patterns were added."""
+        results = self._scan(tmp_path, "swarm_sample.py", '''
+from langchain.agents import create_agent
+from langgraph_swarm import create_handoff_tool, create_swarm
+
+alice = create_agent(
+    "openai:gpt-4o",
+    tools=[create_handoff_tool(agent_name="Bob", description="Transfer to Bob")],
+    name="Alice",
+)
+bob = create_agent(
+    "openai:gpt-4o",
+    tools=[create_handoff_tool(agent_name="Alice", description="Transfer to Alice")],
+    name="Bob",
+)
+
+workflow = create_swarm([alice, bob], default_active_agent="Alice")
+''')
+        frameworks = self._agent_frameworks(results)
+        assert frameworks.count("langgraph") == 3  # create_swarm + 2 create_handoff_tool
+
+    # ── LangChain / LangGraph — JS/TS ───────────────────────────────────
+
+    def test_langgraphjs_camelcase_detected(self, tmp_path):
+        """LangGraph.js's real (camelCase) API — addNode()/addEdge() — must
+        be detected, not just the Python snake_case names. Was a total
+        coverage gap: only the StateGraph import itself was ever caught."""
+        results = self._scan(tmp_path, "langgraph.ts", '''
+import { StateGraph } from "@langchain/langgraph";
+
+const graph = new StateGraph({ channels: {} });
+graph.addNode("planner", plannerFn);
+graph.addNode("executor", executorFn);
+graph.addEdge("planner", "executor");
+export default graph.compile();
+''')
+        frameworks = self._agent_frameworks(results)
+        assert frameworks.count("langgraph") == 4  # StateGraph + 2 addNode + addEdge
+
+    def test_travel_agent_ts_not_langchain(self, tmp_path):
+        """A plain TS class with .invoke() methods (no LangChain import)
+        must not be flagged — confirmed false positive, same class of bug
+        as the Python agent/chain cases above."""
+        results = self._scan(tmp_path, "travel_agent.ts", '''
+class TravelAgent {
+  invoke(request: string) {
+    return "booked";
+  }
+}
+
+class ApprovalChain {
+  invoke(req: object) {
+    return "approved";
+  }
+}
+
+function process() {
+  const agent = new TravelAgent();
+  agent.invoke("flight to NYC");
+  const chain = new ApprovalChain();
+  chain.invoke({ amount: 500 });
+}
+''')
+        assert "langchain" not in self._agent_frameworks(results)
+        assert "langchain" not in self._providers(results)
+
+    def test_real_langchainjs_still_detected(self, tmp_path):
+        """Genuine LangChain.js usage (AgentExecutor, corroborated by a
+        real langchain/@langchain import) must still be detected."""
+        results = self._scan(tmp_path, "real_langchainjs.ts", '''
+import { AgentExecutor } from "langchain/agents";
+import { ChatOpenAI } from "@langchain/openai";
+
+const llm = new ChatOpenAI();
+const agent = new AgentExecutor({ agent: llm, tools: [] });
+agent.invoke({ input: "hello" });
+const chain = buildChain();
+chain.invoke({ input: "hello" });
+''')
+        assert "langchain" in self._agent_frameworks(results)
+        assert "langchain" in self._providers(results)
+
+    def test_langchainjs_universal_loader_detected(self, tmp_path):
+        """LangChain.js's `initChatModel` (the 'universal model loader',
+        `langchain/chat_models/universal`) must be detected as a LangChain
+        AI integration. Confirmed real-world miss: a production
+        LangGraph.js repo (mayooear/ai-pdf-chatbot-langchain) routes every
+        LLM call through this exact function — dynamically instantiating
+        whichever provider is named at runtime, with no `new ChatOpenAI(...)`
+        call site to match — and had zero ai_integrations findings before
+        this pattern was added, despite making real LLM calls throughout."""
+        results = self._scan(tmp_path, "load_model.ts", '''
+import { initChatModel } from "langchain/chat_models/universal";
+
+export async function loadChatModel(name: string) {
+  return await initChatModel(name, { temperature: 0.2 });
+}
+''')
+        assert "langchain" in self._providers(results)
+
+    # ── OpenAI / Anthropic — Python ──────────────────────────────────────
+
+    def test_twilio_messages_create_not_ai(self, tmp_path):
+        """Twilio's SMS SDK (client.messages.create(...)) must not be
+        flagged as an AI integration — confirmed false positive, identical
+        call shape to Anthropic's messages.create with zero AI involvement."""
+        results = self._scan(tmp_path, "twilio_sms.py", '''
+from twilio.rest import Client
+
+def send_sms():
+    client = Client("sid", "token")
+    return client.messages.create(
+        body="Your order shipped!", from_="+15551234567", to="+15559876543",
+    )
+''')
+        assert self._providers(results) == []
+
+    def test_helpdesk_chat_not_openai(self, tmp_path):
+        """A helpdesk client's .chat() method (no openai import) must not
+        be flagged as OpenAI."""
+        results = self._scan(tmp_path, "helpdesk_bot.py", '''
+class HelpdeskClient:
+    def chat(self, ticket_id):
+        return "responded"
+
+def handle_ticket():
+    client = HelpdeskClient()
+    client.chat("TICKET-42")
+''')
+        assert self._providers(results) == []
+
+    def test_real_openai_bare_chat_still_detected(self, tmp_path):
+        """A bare client.chat() call, corroborated by a real openai import,
+        must still be detected."""
+        results = self._scan(tmp_path, "real_openai_bare.py", '''
+import openai
+
+def ask(client):
+    return client.chat(messages=[])
+''')
+        assert len(self._providers(results)) == 1
+
+    def test_real_anthropic_bare_messages_create_still_detected(self, tmp_path):
+        """A bare client.messages.create() call, corroborated by a real
+        anthropic import, must still be detected."""
+        results = self._scan(tmp_path, "real_anthropic_bare.py", '''
+import anthropic
+
+def ask(anthro_client):
+    return anthro_client.messages.create(model="claude-3", messages=[])
+''')
+        assert len(self._providers(results)) == 1
+
+    def test_legacy_and_modern_openai_still_detected(self, tmp_path):
+        """Both legacy (openai.ChatCompletion.create) and modern
+        (client.chat.completions.create) OpenAI SDK usage must keep
+        working — guards against the anchored-matching fix accidentally
+        breaking real detection."""
+        results = self._scan(tmp_path, "openai_sample.py", '''
+import openai
+from openai import OpenAI
+
+def ask_legacy():
+    return openai.ChatCompletion.create(model="gpt-4", messages=[])
+
+client = OpenAI()
+
+def ask_modern():
+    return client.chat.completions.create(model="gpt-4", messages=[])
+''')
+        providers = self._providers(results)
+        # 3 findings: openai.ChatCompletion.create, the OpenAI() constructor
+        # call itself, and client.chat.completions.create.
+        assert providers.count("openai") == 3
+
+
+# ── --all-frameworks scope flag ───────────────────────────────────────────
+
+class TestFrameworkScopeFlag:
+
+    def _scan_mixed_repo(self, tmp_path, all_frameworks: bool) -> dict:
+        (tmp_path / "crewai_sample.py").write_text('''
+from crewai import Crew, Agent, Task
+
+def build_crew():
+    researcher = Agent(role="Researcher", goal="find facts")
+    writer = Agent(role="Writer", goal="write report")
+    task = Task(description="research and write")
+    crew = Crew(agents=[researcher, writer], tasks=[task])
+    crew.kickoff()
+''', encoding="utf-8")
+        (tmp_path / "openai_sample.py").write_text('''
+from openai import OpenAI
+client = OpenAI()
+client.chat.completions.create(model="gpt-4", messages=[])
+''', encoding="utf-8")
+        return ScanEngine(all_frameworks=all_frameworks).scan(str(tmp_path))
+
+    def test_default_scope_suppresses_crewai(self, tmp_path):
+        """Default scan (all_frameworks=False) must not report CrewAI —
+        only OpenAI/LangChain/LangGraph (DEFAULT_FRAMEWORK_SCOPE)."""
+        results = self._scan_mixed_repo(tmp_path, all_frameworks=False)
+        assert results["all_frameworks"] is False
+        frameworks = [
+            d["framework"] for d in results["primitives"]["decision_points"]
+            if d.get("type") == "agent_invocation"
+        ]
+        assert "crewai" not in frameworks
+        providers = [a["provider"] for a in results["primitives"]["ai_integrations"]]
+        assert "openai" in providers
+
+    def test_all_frameworks_flag_reports_crewai(self, tmp_path):
+        """--all-frameworks (all_frameworks=True) must report CrewAI
+        alongside OpenAI — same repo as above, opt-in widened scope."""
+        results = self._scan_mixed_repo(tmp_path, all_frameworks=True)
+        assert results["all_frameworks"] is True
+        frameworks = [
+            d["framework"] for d in results["primitives"]["decision_points"]
+            if d.get("type") == "agent_invocation"
+        ]
+        assert "crewai" in frameworks
+        providers = [a["provider"] for a in results["primitives"]["ai_integrations"]]
+        assert "openai" in providers
+
+    def test_default_scope_includes_openai_agents_sdk(self, tmp_path):
+        """OpenAI's own official agent framework (Agent()/Runner.run(),
+        tagged "openai_agents_sdk" separately from plain "openai" client
+        calls) must be visible in the DEFAULT scope, not just
+        --all-frameworks — it's still squarely "OpenAI SDK". Confirmed
+        real-world gap before this: 3 real repos built on this SDK
+        (including openai/openai-agents-python itself) had every finding
+        suppressed by default."""
+        (tmp_path / "agent_sample.py").write_text('''
+from agents import Agent, Runner
+
+agent = Agent(name="Assistant", instructions="You are a helpful assistant")
+result = Runner.run_sync(agent, "hello")
+''', encoding="utf-8")
+        results = ScanEngine().scan(str(tmp_path))
+        providers = [a["provider"] for a in results["primitives"]["ai_integrations"]]
+        assert "openai_agents_sdk" in providers
+
+
 if __name__ == "__main__":
     import sys
     sys.exit(pytest.main([__file__, "-v"]))

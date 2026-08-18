@@ -1,0 +1,128 @@
+════════════════════════════════════════════════════════════════════════════════
+X-VERBA SCAN RESULTS
+════════════════════════════════════════════════════════════════════════════════
+
+Repository:  C:\Users\OEM\AppData\Local\Temp\claude\H--Claude-Code-Building-CLI-Tool\d7566a6d-1d22-462a-a734-0028b91175ea\scratchpad\public_repos\langgraph-swarm-py
+Scan Date:   2026-08-17T19:42:03.061784+00:00
+
+════════════════════════════════════════════════════════════════════════════════
+GOVERNANCE SCORECARD
+════════════════════════════════════════════════════════════════════════════════
+
+Structural Gamma:                  0.00 / 1.0  [BELOW_THRESHOLD]
+  (0% of governance-relevant decision points have an observable governance checkpoint.)
+  ├─ Total Decision Points:        0
+  ├─ Governed Decision Points:     0 (0%)
+  └─ Ungoverned Decision Points:   0 (0%)
+
+Tendency State:                     EMERGING
+  ├─ T-Amplification Active:       No (8 high-centrality ungoverned decisions)
+  └─ Pre-Node Proximity:           LOW (<10% of critical decisions ungoverned)
+  Note: Tendency driven primarily by: high ungoverned decision density.
+
+════════════════════════════════════════════════════════════════════════════════
+AI VISIBILITY
+════════════════════════════════════════════════════════════════════════════════
+
+AI Integrations Detected:          0
+  ├─ Governed:                     0 (0%)
+  ├─ Ungoverned:                   0 (0%)
+  └─ High-Risk Patterns:           0 (high temperature + user input + dynamic prompt)
+
+Candidate Governance Nodes:        0  (X-Verba inferences — confirm or correct in governance contract)
+
+════════════════════════════════════════════════════════════════════════════════
+AGENT VISIBILITY
+════════════════════════════════════════════════════════════════════════════════
+
+Agents Detected:                    0
+Agent Handovers Detected:           0
+  ├─ Governed:                     0 (0%)
+  └─ Ungoverned:                   0 (0%)
+
+Agent Chains:                        0
+  ├─ Fully Governed:               0
+  ├─ Partially Governed:           0
+  └─ Ungoverned:                   0
+
+Agent Clusters:                      0
+  ├─ Cluster Risk (Avg Chain Risk): 0.00
+  └─ Cluster Governance Gaps:      0 (0 with 2+ ungated handovers)
+
+════════════════════════════════════════════════════════════════════════════════
+DECISION VISIBILITY
+════════════════════════════════════════════════════════════════════════════════
+
+Decision Points Detected:            18
+  ├─ Low Consequence          0 (0%)
+  ├─ Medium Consequence       0 (0%)
+  ├─ High Consequence         18 (100%)
+  └─ Critical Consequence     0 (0%)
+
+Decision Influence Ranking (PageRank):
+  ├─ Most Influential Decision:   langgraph_swarm\handoff.py:26 (score=0.008333, criticality=0.50)
+  └─ Governance Choke Point:      langgraph_swarm\handoff.py:26 (score=0.008333, ungoverned)
+
+════════════════════════════════════════════════════════════════════════════════
+GOVERNANCE COVERAGE
+════════════════════════════════════════════════════════════════════════════════
+
+Overall Coverage:                    0%
+
+Critical Decision Coverage:
+  ├─ Critical Decisions:           0
+  ├─ Governed:                     0 (0%)
+  └─ Ungoverned:                   0 (0%)
+
+════════════════════════════════════════════════════════════════════════════════
+CRITICAL FINDINGS
+════════════════════════════════════════════════════════════════════════════════
+
+No critical-severity decision point gaps detected.
+
+════════════════════════════════════════════════════════════════════════════════
+GOVERNANCE GAPS SUMMARY
+════════════════════════════════════════════════════════════════════════════════
+
+Critical Governance Gaps:            0
+
+High Governance Gaps:                0
+Medium Governance Gaps:              0
+
+Agent Handover Gaps:                 0 / 0 ungoverned
+Cluster Governance Gaps:             0
+Terminal States (Silent Failures):   0
+
+════════════════════════════════════════════════════════════════════════════════
+GOVERNANCE THEATRE
+════════════════════════════════════════════════════════════════════════════════
+
+No governance theatre detected.
+
+════════════════════════════════════════════════════════════════════════════════
+DRIFT CLASS DETECTIONS
+════════════════════════════════════════════════════════════════════════════════
+
+No drift class detections.
+
+════════════════════════════════════════════════════════════════════════════════
+GOVERNANCE RECOMMENDATIONS
+════════════════════════════════════════════════════════════════════════════════
+
+Immediate Actions (Critical): 0 items
+  (none)
+
+Short-term (High): 0 items
+  (none)
+
+Medium-term (Medium): 0 items
+  (none)
+
+Implementation order is based on:
+  - Decision criticality (business_impact x blast_radius x irreversibility)
+  - PageRank (most influential decisions first)
+  - Severity (critical > high > medium)
+
+════════════════════════════════════════════════════════════════════════════════
+End of Report
+════════════════════════════════════════════════════════════════════════════════

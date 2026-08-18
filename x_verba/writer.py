@@ -272,8 +272,9 @@ class OutputWriter:
                 "domain": None,
                 "governance_authority": None,
                 "scan_date": self.results.get("scan_date", ""),
-                "verba_version": self.results.get("verba_version", "0.5.0"),
+                "verba_version": self.results.get("verba_version", "0.6.0"),
                 "context_profile": self.results.get("context_profile", "ai-app"),
+                "framework_scope": "all" if self.results.get("all_frameworks") else "openai, langchain, langgraph (default)",
                 "reviewed": False,
                 "approved": False,
                 "approved_by": None,
@@ -1319,6 +1320,10 @@ class OutputWriter:
         )
         lines.append(
             f"**Context Profile:** `{self.results.get('context_profile', 'ai-app')}`"
+        )
+        framework_scope = "all" if self.results.get("all_frameworks") else "openai, langchain, langgraph (default)"
+        lines.append(
+            f"**Framework Scope:** `{framework_scope}`"
         )
         lines.append("")
         lines.append("---")

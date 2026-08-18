@@ -36,7 +36,7 @@ BANNER = """
 
 
 @click.group()
-@click.version_option(version="0.5.0", prog_name="x-verba")
+@click.version_option(version="0.6.0", prog_name="x-verba")
 def main():
     """
     X-Verba — Find the governance gaps in your AI code before your users do.
@@ -129,9 +129,21 @@ def main():
         "Example: --focus backend/api/routes/ --focus backend/workers/"
     ),
 )
+@click.option(
+    "--all-frameworks",
+    is_flag=True,
+    default=False,
+    help=(
+        "Report every provider/framework the underlying detectors recognise "
+        "(CrewAI, AutoGen, Google Gemini, AWS Bedrock, etc.), not just "
+        "OpenAI/LangChain/LangGraph. Default scope covers the three most "
+        "precision-audited frameworks; this widens detection at the cost of "
+        "less-audited, potentially noisier findings for everything else."
+    ),
+)
 def scan(
     path, output_format, output, identity_key, context_profile, strict_ai_only,
-    verbose, save_baseline, compare_path, focus_paths,
+    verbose, save_baseline, compare_path, focus_paths, all_frameworks,
 ):
     """
     Scan any repo and generate a governance scorecard.
@@ -159,6 +171,11 @@ def scan(
       system-utility — suppress file op false positives for tools/compilers
       general        — flag everything regardless of AI presence
 
+    By default, AI-provider/framework detection is scoped to OpenAI,
+    LangChain, and LangGraph — the three most precision-audited detectors.
+    Pass --all-frameworks to also report CrewAI, AutoGen, Google Gemini,
+    AWS Bedrock, and everything else the engine recognises.
+
     Examples:
 
     \b
@@ -168,6 +185,7 @@ def scan(
       x-verba scan ./my-repo --strict-ai-only
       x-verba scan ./my-repo --identity-key my-system-v1.0
       x-verba scan ./my-repo -o report.txt
+      x-verba scan ./my-repo --all-frameworks
       x-verba scan . --save-baseline
       x-verba scan . --compare .verba/governance-baseline.json
       x-verba scan . --compare .verba/governance-history/scan-001.json
@@ -176,6 +194,8 @@ def scan(
 
     console.print()
     subtitle = f"Governance scorecard  |  profile: {context_profile}"
+    if all_frameworks:
+        subtitle += "  |  all frameworks"
     if focus_paths:
         subtitle += f"  |  focus: {', '.join(focus_paths)}"
     console.print(Panel(
@@ -185,7 +205,7 @@ def scan(
     ))
     console.print()
 
-    engine = ScanEngine(verbose=verbose, context_profile=context_profile)
+    engine = ScanEngine(verbose=verbose, context_profile=context_profile, all_frameworks=all_frameworks)
     results = engine.scan(path, identity_key=identity_key, focus_paths=list(focus_paths) if focus_paths else None)
 
     if strict_ai_only and results.get("summary", {}).get("ai_integrations_detected", 0) == 0:
@@ -250,6 +270,16 @@ def scan(
         except BaselineNotFoundError as e:
             console.print(f"[bold red]Error:[/bold red] {e}")
             raise SystemExit(1)
+        baseline_all_frameworks = bool(baseline.get("all_frameworks"))
+        if baseline_all_frameworks != all_frameworks:
+            console.print(
+                "[yellow]Warning:[/yellow] baseline was saved with "
+                f"[bold]--all-frameworks={baseline_all_frameworks}[/bold] but this scan used "
+                f"[bold]--all-frameworks={all_frameworks}[/bold]. Framework-scoped findings "
+                "(ai_providers, agent_inventory deltas) may show false regressions/improvements "
+                "that are really just a scope mismatch, not a code change."
+            )
+            console.print()
         current = OutputFormatter().format_report(results, fmt="json")
         import json as _json
         current_dict = _json.loads(current)
@@ -257,7 +287,16 @@ def scan(
         verification_dict = verification.to_dict()
         verif_fmt = "json" if output_format == "json" else "yaml"
         verif_writer = OutputWriter(verification_dict, verif_fmt)
-        verif_path = verif_writer.write_verification(verification_dict)
+        # Anchor to the scanned repo's own .verba/, not the process's cwd —
+        # OutputWriter.write_verification()'s bare default is a *relative*
+        # path, which silently lands wherever this command happened to be
+        # invoked from (e.g. every test run from the X-Verba repo's own
+        # root was writing a stray .verba/ into this repo, not the repo
+        # under test). Same fix applied to `qa` below.
+        verba_dir.mkdir(parents=True, exist_ok=True)
+        verif_path = verif_writer.write_verification(
+            verification_dict, str(verba_dir / f"governance-verification.{verif_fmt}")
+        )
         _print_verification_summary(verification_dict, verif_path)
         if not verification.passed:
             raise SystemExit(1)
@@ -283,7 +322,20 @@ def scan(
     default=True,
     help="Exit with non-zero status if critical governance regressions found (default: true)",
 )
-def qa(path, schema, output_format, fail_on_critical):
+@click.option(
+    "--all-frameworks",
+    is_flag=True,
+    default=False,
+    help=(
+        "Report every provider/framework the underlying detectors recognise, "
+        "not just OpenAI/LangChain/LangGraph. Match whatever scope the "
+        "baseline (SCHEMA) was originally scanned with — a baseline saved "
+        "via 'scan --all-frameworks --save-baseline' must be QA'd with this "
+        "flag too, or frameworks present in the baseline but absent from a "
+        "narrower current scan will show as false regressions."
+    ),
+)
+def qa(path, schema, output_format, fail_on_critical, all_frameworks):
     """
     Check code against an approved governance baseline.
 
@@ -301,6 +353,7 @@ def qa(path, schema, output_format, fail_on_critical):
     \b
       x-verba qa . --schema .verba/governance-baseline.json
       x-verba qa . --schema .verba/governance-baseline.json --format json
+      x-verba qa . --schema .verba/governance-baseline.json --all-frameworks
     """
     import json as _json
     from .engine import ScanEngine, OutputFormatter
@@ -315,7 +368,7 @@ def qa(path, schema, output_format, fail_on_critical):
     ))
     console.print()
 
-    scan_results = ScanEngine().scan(path)
+    scan_results = ScanEngine(all_frameworks=all_frameworks).scan(path)
     current = OutputFormatter._json_safe(scan_results)
 
     with open(schema, encoding="utf-8") as f:
@@ -325,11 +378,37 @@ def qa(path, schema, output_format, fail_on_critical):
         else:
             baseline = _json.load(f)
 
+    # A baseline scanned under a wider/narrower framework scope than this QA
+    # run makes framework-dependent deltas (ai_providers, agent_inventory)
+    # misleading — findings the baseline saw but this scan is scoped not to
+    # see (or vice versa) surface as false regressions/improvements, not
+    # real code changes. bool(None) == False, so a pre-flag baseline
+    # (missing the key entirely) reads as False here, matching its actual
+    # behaviour at the time it was saved.
+    baseline_all_frameworks = bool(baseline.get("all_frameworks"))
+    if baseline_all_frameworks != all_frameworks:
+        console.print(
+            "[yellow]Warning:[/yellow] baseline was saved with "
+            f"[bold]--all-frameworks={baseline_all_frameworks}[/bold] but this QA run used "
+            f"[bold]--all-frameworks={all_frameworks}[/bold]. Framework-scoped findings "
+            "(ai_providers, agent_inventory deltas) may show false regressions/improvements "
+            "that are really just a scope mismatch, not a code change. Re-run with "
+            f"{'--all-frameworks' if baseline_all_frameworks else 'no --all-frameworks flag'} "
+            "to match the baseline."
+        )
+        console.print()
+
     verification = GovernanceVerificationEngine().compare(baseline, current)
     verification_dict = verification.to_dict()
 
     writer = OutputWriter(verification_dict, output_format)
-    output_path = writer.write_verification(verification_dict)
+    # Anchor to the scanned repo's own .verba/, not the process's cwd — see
+    # the matching comment in `scan --compare` above for why.
+    verba_dir = Path(path) / ".verba"
+    verba_dir.mkdir(parents=True, exist_ok=True)
+    output_path = writer.write_verification(
+        verification_dict, str(verba_dir / f"governance-verification.{output_format}")
+    )
     _print_qa_summary(verification_dict, output_path)
 
     if fail_on_critical and verification_dict.get("has_critical_regressions"):
@@ -524,11 +603,13 @@ def _print_terminal_summary(results, output_path):
     files = stats.get("files_scanned", 0)
     ai_count = stats.get("ai_integrations_detected", 0)
     profile = stats.get("context_profile", "ai-app")
+    all_fw = stats.get("all_frameworks", False)
     decision_pts = stats.get("decision_points_detected", 0)
 
     if status == "NO_AI_INTEGRATIONS":
         console.print(f"[dim]Files scanned:[/dim] {files}")
         console.print(f"[dim]Context profile:[/dim] {profile}")
+        console.print(f"[dim]Framework scope:[/dim] {'all' if all_fw else 'openai, langchain, langgraph (default)'}")
         console.print()
         console.print("[yellow]No AI integrations detected.[/yellow]")
         console.print(f"[dim]{stats.get('note', '')}[/dim]")
