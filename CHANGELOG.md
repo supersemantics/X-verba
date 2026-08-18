@@ -1,5 +1,177 @@
 # Changelog
 
+## 0.6.0
+
+### Changed
+
+- **`openai_agents_sdk` added to `DEFAULT_FRAMEWORK_SCOPE`.** OpenAI's own
+  official agent framework (`Agent()`, `Runner.run()`, `function_tool()`,
+  `handoff()` — tagged separately from plain `openai` client calls via
+  `_GUARDED_PROVIDER_IMPORTS`) was previously suppressed by default,
+  requiring `--all-frameworks` to see. It's still squarely "OpenAI SDK",
+  the same way `langgraph` sits alongside `langchain` as its own entry
+  rather than being folded in or excluded. Confirmed real-world gap before
+  this fix: scanned 3 real repos built on this SDK — the official
+  [openai/openai-agents-python](https://github.com/openai/openai-agents-python)
+  repo itself (70 findings), plus
+  [modal-labs/openai-agents-python-example](https://github.com/modal-labs/openai-agents-python-example)
+  (42) and
+  [temporal-community/openai-agents-demos](https://github.com/temporal-community/openai-agents-demos)
+  (37) — every single one of those 149 findings was invisible by default;
+  the latter two repos showed only 1 generic finding each despite being
+  built entirely around this SDK.
+
+- **Regenerated the stale `evidence/langchain/langgraph/` fixture** (last
+  generated 2026-06-27, predating every fix in this release) against the
+  official `langchain-ai/langgraph` repo with the current engine, so the
+  checked-in evidence reflects actual current tool behavior rather than a
+  pre-fix snapshot.
+
+### Fixed (real-world validation)
+
+- **`create_swarm`/`create_handoff_tool` (the official
+  [langchain-ai/langgraph-swarm-py](https://github.com/langchain-ai/langgraph-swarm-py)
+  package's top-level API) were completely unrecognised.** Same class of
+  gap as `create_react_agent`: the package's own documented usage example
+  — a downstream caller building a swarm of agents with handoff tools,
+  never touching `StateGraph`/`add_node` directly — produced zero
+  langgraph findings before this fix, despite genuinely using LangGraph's
+  official swarm library end to end. Added both as new unconditional
+  entries (distinctive compound names, no corroboration needed).
+
+- **`create_react_agent` (`langgraph.prebuilt`), LangGraph's high-level
+  "quick start" agent factory, was completely unrecognised.**
+  `AGENT_FRAMEWORK_PATTERNS["langgraph"]` only had the low-level
+  `StateGraph`/`add_node`/`add_edge` graph-building API — a repo using only
+  the prebuilt API had zero langgraph findings despite real, working
+  LangGraph usage throughout. Found scanning a real public repo
+  ([braincrew-lab/langgraph-mcp-agents](https://github.com/braincrew-lab/langgraph-mcp-agents)),
+  which uses only `create_react_agent` and never touches `StateGraph`
+  directly — a repo named "langgraph-mcp-agents" showed 0 langgraph
+  decision points before this fix. Added `create_react_agent` as a new,
+  unconditional (no corroboration needed — distinctive compound name)
+  entry.
+
+### Fixed
+
+- **`x-verba qa` and `scan --compare` wrote their verification report to a
+  path relative to the process's own working directory, not the scanned
+  repo.** `OutputWriter.write_verification()`'s bare default
+  (`.verba/governance-verification.{ext}`) is a relative path — unlike
+  `scan`'s main report/contract and `--save-baseline` (both correctly
+  anchored via `Path(path) / ".verba"` / `BaselineStore`), so running `qa`
+  or `scan --compare` from inside a different directory than the target
+  repo silently wrote output there instead. Concretely: every `pytest`
+  run from this repo's own root was leaving a stray `.verba/` in the
+  X-Verba repo itself (harmless — already gitignored — but real clutter,
+  found while scanning an external public repo and noticing an
+  unrelated `.verba/` folder sitting in the wrong place). Both commands
+  now explicitly anchor to `Path(path) / ".verba"`, matching the pattern
+  `scan` already used.
+
+### Fixed (real-world validation)
+
+- **LangChain.js's `initChatModel` (the "universal model loader",
+  `langchain/chat_models/universal`) was completely undetected.** Found by
+  scanning a real production LangGraph.js repo
+  ([mayooear/ai-pdf-chatbot-langchain](https://github.com/mayooear/ai-pdf-chatbot-langchain))
+  — it routes every LLM call through this function, which dynamically
+  instantiates whichever provider is named at runtime, so there's no `new
+  ChatOpenAI(...)`-style call site to match. The repo's `ai_integrations`
+  count was 0 despite making real LLM calls throughout (LangGraph
+  detection itself was unaffected and correctly found all 13 handover/
+  decision-point findings, including the fluent method-chained
+  `.addNode()`/`.addEdge()` style — only the LLM-call side was blind).
+  Added `initChatModel(` to `JS_AI_PATTERNS`. Python's equivalent
+  (`init_chat_model`, `langchain.chat_models.init_chat_model`) was already
+  correctly detected via the existing import-tracking mechanism — no fix
+  needed there, confirmed by direct test.
+
+### Added
+
+- **`--all-frameworks` scan flag** (`ScanEngine(all_frameworks=...)` /
+  `x-verba scan --all-frameworks`). Default scope narrows AI-provider and
+  agent-invocation-decision-point detection to `DEFAULT_FRAMEWORK_SCOPE`
+  (OpenAI, LangChain, LangGraph — the three frameworks precision-audited
+  below), suppressing CrewAI/AutoGen/Google/AWS Bedrock/etc. findings from
+  the default report rather than deleting their detectors. Pass the flag
+  to widen back to everything the engine recognises. Deliberately does
+  **not** scope `agent_handovers` — that subsystem's 9 detection families
+  are structural-pattern-based, not framework-tagged per finding (its
+  graph/builder-edge family alone covers LangGraph, Microsoft Agent
+  Framework, AutoGen, and Haystack with one shared detector and no
+  per-finding framework label), so it stays framework-agnostic/always-on
+  regardless of this flag.
+- **`x-verba qa` also gained `--all-frameworks`.** It was previously
+  hard-coded to `ScanEngine()`'s default scope with no way to widen it,
+  despite its own docstring calling itself "equivalent to `scan --compare`".
+  Both `qa` and `scan --compare` now warn if the loaded baseline's
+  `all_frameworks` setting doesn't match the current run's — a scope
+  mismatch otherwise surfaces as false framework-related
+  regressions/improvements in `ai_providers`/`agent_inventory` deltas that
+  are really just "the current scan can no longer see what the baseline
+  saw" rather than an actual code change.
+- **Governance contract/report output (`writer.py`) now records framework
+  scope** alongside the existing context-profile line, in both the YAML
+  metadata block and the markdown governance-contract header — a report
+  scoped to the default three frameworks now says so, rather than reading
+  as if it covered everything the engine can detect.
+
+LangChain/LangGraph/OpenAI/Anthropic detection precision pass — six
+confirmed false positives fixed and one real coverage gap closed, across
+both languages LangChain and LangGraph actually ship in (Python, JS/TS).
+Every fix below was verified with a real before/after scan, not just
+inferred from reading the code, and each now has a permanent regression
+test in `TestFrameworkDetectionPrecision` (`x_verba/tests/test_matrix.py`).
+
+### Fixed
+
+- **Python AST decision-point matching was raw substring, not anchored.**
+  `DecisionPointAnalyser._function_call` matched `AGENT_FRAMEWORK_PATTERNS`
+  / `CONSEQUENCE_TYPE_PATTERNS` via `pattern in call_str` — a variable
+  named `supply_chain` calling `.run_pipeline()` matched LangChain's
+  `chain.run` purely by character overlap. Now uses the same
+  boundary-anchored matching (`_call_matches_pattern`) the JS/TS/Go/Rust/C#
+  pattern-based path already had via `_pattern_matches_call`, so the Python
+  path (the one branded "full AST-based analysis") is at least as precise,
+  not looser.
+- **LangGraph's `add_node`/`add_edge`/`graph.invoke` collided with
+  NetworkX.** Both libraries use the identical method names for their own,
+  unrelated graph-building APIs. These entries now require the file to
+  also show a corroborating `langgraph` import or `StateGraph` reference
+  (`_AMBIGUOUS_FRAMEWORK_PATTERNS` / `_framework_corroborated`) before
+  counting. `StateGraph` itself stays unconditional — a genuinely
+  distinctive class name.
+- **LangChain's `agent.run`/`agent.invoke`/`chain.run`/`chain.invoke`/
+  `create_agent` collided with any domain "agent" or "chain" object** —
+  confirmed false positive on ordinary insurance-claims code
+  (`InsuranceAgent.run()`, `ApprovalChain.invoke()`). Same corroboration
+  treatment: requires a real `langchain*` import or `AgentExecutor`/
+  `LLMChain` elsewhere in the file.
+- **LangGraph.js was almost entirely invisible.** `AGENT_FRAMEWORK_PATTERNS`
+  only listed LangGraph's Python (snake_case) method names — `add_node`/
+  `add_edge` — never LangGraph.js's actual (camelCase) API. A real
+  LangGraph.js file scanned before this fix produced only 1 detection
+  (`StateGraph`); the `.addNode()`/`.addEdge()` call sites themselves were
+  never seen. Both languages' method names are now listed, and the
+  corroboration regexes recognize JS/TS import syntax (`from
+  "@langchain/langgraph"`, `require(...)`) alongside the Python forms.
+- **The same LangChain agent/chain ambiguity existed uncorrected on the
+  JS/TS side**, in two places: `JS_AI_PATTERNS`' `chain.invoke`/
+  `agent.invoke` (AI-integration layer) and the shared
+  `PatternDecisionPointAnalyser` used by the JS/Go/Rust/C# decision-point
+  path (which had anchored matching already, but no import corroboration).
+  Both now gated the same way as Python, confirmed against a plain
+  TypeScript class with `.invoke()` methods and no LangChain import.
+- **`messages.create`/`client.messages`/`client.chat` had no import
+  corroboration at all**, unlike the rest of `AI_CALL_METHODS`'s generic
+  entries. Confirmed false positive: Twilio's Python SDK
+  (`client.messages.create(...)`, sending SMS) was flagged as an AI
+  integration purely from the call shape. Now requires the file to
+  actually import `openai`/`anthropic` (checked against
+  `ASTAnalyser.ai_imports`, which is already precisely tracked) before
+  these count.
+
 ## 0.5.0
 
 Multi-agent handover detection — the full body of work. `agent_inventory`

@@ -32,10 +32,11 @@ system_identity:
   approved_date: null
   context_profile: ai-app
   domain: null
+  framework_scope: openai, langchain, langgraph (default)
   governance_authority: null
-  identity_key: langgraph-67f562e5
+  identity_key: langgraph-89d5c34a
   reviewed: false
-  scan_date: '2026-06-27T22:25:50.903560+00:00'
+  scan_date: '2026-08-17T18:51:48.741416+00:00'
   system_name: null
   verba_version: 0.5.0
   version: null
@@ -180,7 +181,7 @@ invariants:
     current_code: _validate_namespace(namespace)
     currently_enforced_in_code: true
     currently_formalised: false
-    detected_from: libs\checkpoint\langgraph\store\base\__init__.py:911
+    detected_from: libs\checkpoint\langgraph\store\base\__init__.py:919
     near_ai_call: false
     rule: null
     scope: null
@@ -193,7 +194,7 @@ invariants:
     current_code: _validate_namespace(namespace)
     currently_enforced_in_code: true
     currently_formalised: false
-    detected_from: libs\checkpoint\langgraph\store\base\__init__.py:1172
+    detected_from: libs\checkpoint\langgraph\store\base\__init__.py:1180
     near_ai_call: false
     rule: null
     scope: null
@@ -206,7 +207,7 @@ invariants:
     current_code: 'def _validate_namespace(namespace: tuple[str, ...]) -> None:'
     currently_enforced_in_code: true
     currently_formalised: false
-    detected_from: libs\checkpoint\langgraph\store\base\__init__.py:1255
+    detected_from: libs\checkpoint\langgraph\store\base\__init__.py:1263
     near_ai_call: false
     rule: null
     scope: null
@@ -245,7 +246,7 @@ invariants:
     current_code: 'def _validate_filter_key(key: str) -> None:'
     currently_enforced_in_code: true
     currently_formalised: false
-    detected_from: libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:113
+    detected_from: libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:175
     near_ai_call: false
     rule: null
     scope: null
@@ -258,7 +259,7 @@ invariants:
     current_code: _validate_filter_key(key)
     currently_enforced_in_code: true
     currently_formalised: false
-    detected_from: libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:397
+    detected_from: libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:459
     near_ai_call: false
     rule: null
     scope: null
@@ -271,7 +272,7 @@ invariants:
     current_code: _validate_filter_key(key)
     currently_enforced_in_code: true
     currently_formalised: false
-    detected_from: libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:636
+    detected_from: libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:716
     near_ai_call: true
     rule: null
     scope: null
@@ -284,7 +285,7 @@ invariants:
     current_code: _validate_filter_key(key)
     currently_enforced_in_code: true
     currently_formalised: false
-    detected_from: libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:857
+    detected_from: libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:940
     near_ai_call: true
     rule: null
     scope: null
@@ -533,7 +534,7 @@ invariants:
     current_code: validate_deployment_selector(deployment_id, name)
     currently_enforced_in_code: true
     currently_formalised: false
-    detected_from: libs\cli\langgraph_cli\deploy.py:1972
+    detected_from: libs\cli\langgraph_cli\deploy.py:1980
     near_ai_call: false
     rule: null
     scope: null
@@ -637,7 +638,7 @@ invariants:
     current_code: assert len(scratchpad.resume) == idx, (scratchpad.resume, idx)
     currently_enforced_in_code: true
     currently_formalised: false
-    detected_from: libs\langgraph\langgraph\types.py:922
+    detected_from: libs\langgraph\langgraph\types.py:962
     near_ai_call: false
     rule: null
     scope: null
@@ -650,7 +651,7 @@ invariants:
     current_code: 'assert result == {"messages": ["b"]}'
     currently_enforced_in_code: true
     currently_formalised: false
-    detected_from: libs\langgraph\langgraph\types.py:973
+    detected_from: libs\langgraph\langgraph\types.py:1013
     near_ai_call: false
     rule: null
     scope: null
@@ -663,7 +664,7 @@ invariants:
     current_code: validate_timeout_supported,
     currently_enforced_in_code: true
     currently_formalised: false
-    detected_from: libs\langgraph\langgraph\pregel\main.py:154
+    detected_from: libs\langgraph\langgraph\pregel\main.py:155
     near_ai_call: false
     rule: null
     scope: null
@@ -676,7 +677,7 @@ invariants:
     current_code: from langgraph.pregel._validate import validate_graph, validate_keys
     currently_enforced_in_code: true
     currently_formalised: false
-    detected_from: libs\langgraph\langgraph\pregel\main.py:156
+    detected_from: libs\langgraph\langgraph\pregel\main.py:157
     near_ai_call: false
     rule: null
     scope: null
@@ -689,7 +690,7 @@ invariants:
     current_code: assert isinstance(self._channels, list), (
     currently_enforced_in_code: true
     currently_formalised: false
-    detected_from: libs\langgraph\langgraph\pregel\main.py:297
+    detected_from: libs\langgraph\langgraph\pregel\main.py:298
     near_ai_call: false
     rule: null
     scope: null
@@ -702,7 +703,7 @@ invariants:
     current_code: validate_timeout_supported(node.node or node.bound, name=name)
     currently_enforced_in_code: true
     currently_formalised: false
-    detected_from: libs\langgraph\langgraph\pregel\main.py:935
+    detected_from: libs\langgraph\langgraph\pregel\main.py:936
     near_ai_call: false
     rule: null
     scope: null
@@ -715,7 +716,7 @@ invariants:
     current_code: validate_graph(
     currently_enforced_in_code: true
     currently_formalised: false
-    detected_from: libs\langgraph\langgraph\pregel\main.py:936
+    detected_from: libs\langgraph\langgraph\pregel\main.py:937
     near_ai_call: false
     rule: null
     scope: null
@@ -728,7 +729,7 @@ invariants:
     current_code: validate_keys(output_keys, self.channels)
     currently_enforced_in_code: true
     currently_formalised: false
-    detected_from: libs\langgraph\langgraph\pregel\main.py:2583
+    detected_from: libs\langgraph\langgraph\pregel\main.py:2568
     near_ai_call: false
     rule: null
     scope: null
@@ -1295,10 +1296,10 @@ terminal_states:
     escalation_path: null
     governance_authority: null
     human_authorised_exit_required: true
-    location: libs\checkpoint\langgraph\checkpoint\memory\__init__.py:670
+    location: libs\checkpoint\langgraph\checkpoint\memory\__init__.py:664
     notification_targets: null
     re_enablement_creates_new_instance: true
-    reason: An irreversible action (database_write) at line 670 in an AI-adjacent
+    reason: An irreversible action (database_write) at line 664 in an AI-adjacent
       file has no authorisation gate. Once executed, it cannot be undone.
     response_time_sla: null
     triggered_by_gap: IA-GAP-004
@@ -1308,10 +1309,10 @@ terminal_states:
     escalation_path: null
     governance_authority: null
     human_authorised_exit_required: true
-    location: libs\checkpoint\langgraph\checkpoint\memory\__init__.py:666
+    location: libs\checkpoint\langgraph\checkpoint\memory\__init__.py:660
     notification_targets: null
     re_enablement_creates_new_instance: true
-    reason: An irreversible action (file_system) at line 666 in an AI-adjacent file
+    reason: An irreversible action (file_system) at line 660 in an AI-adjacent file
       has no authorisation gate. Once executed, it cannot be undone.
     response_time_sla: null
     triggered_by_gap: IA-GAP-005
@@ -1425,10 +1426,10 @@ terminal_states:
     escalation_path: null
     governance_authority: null
     human_authorised_exit_required: true
-    location: libs\checkpoint-postgres\langgraph\store\postgres\base.py:325
+    location: libs\checkpoint-postgres\langgraph\store\postgres\base.py:339
     notification_targets: null
     re_enablement_creates_new_instance: true
-    reason: An irreversible action (database_delete) at line 325 in an AI-adjacent
+    reason: An irreversible action (database_delete) at line 339 in an AI-adjacent
       file has no authorisation gate. Once executed, it cannot be undone.
     response_time_sla: null
     triggered_by_gap: IA-GAP-014
@@ -1438,10 +1439,10 @@ terminal_states:
     escalation_path: null
     governance_authority: null
     human_authorised_exit_required: true
-    location: libs\checkpoint-postgres\langgraph\store\postgres\base.py:171
+    location: libs\checkpoint-postgres\langgraph\store\postgres\base.py:172
     notification_targets: null
     re_enablement_creates_new_instance: true
-    reason: An irreversible action (database_write) at line 171 in an AI-adjacent
+    reason: An irreversible action (database_write) at line 172 in an AI-adjacent
       file has no authorisation gate. Once executed, it cannot be undone.
     response_time_sla: null
     triggered_by_gap: IA-GAP-015
@@ -1503,10 +1504,10 @@ terminal_states:
     escalation_path: null
     governance_authority: null
     human_authorised_exit_required: true
-    location: libs\checkpoint-sqlite\langgraph\store\sqlite\aio.py:248
+    location: libs\checkpoint-sqlite\langgraph\store\sqlite\aio.py:257
     notification_targets: null
     re_enablement_creates_new_instance: true
-    reason: An irreversible action (database_delete) at line 248 in an AI-adjacent
+    reason: An irreversible action (database_delete) at line 257 in an AI-adjacent
       file has no authorisation gate. Once executed, it cannot be undone.
     response_time_sla: null
     triggered_by_gap: IA-GAP-020
@@ -1516,10 +1517,10 @@ terminal_states:
     escalation_path: null
     governance_authority: null
     human_authorised_exit_required: true
-    location: libs\checkpoint-sqlite\langgraph\store\sqlite\aio.py:237
+    location: libs\checkpoint-sqlite\langgraph\store\sqlite\aio.py:246
     notification_targets: null
     re_enablement_creates_new_instance: true
-    reason: An irreversible action (database_write) at line 237 in an AI-adjacent
+    reason: An irreversible action (database_write) at line 246 in an AI-adjacent
       file has no authorisation gate. Once executed, it cannot be undone.
     response_time_sla: null
     triggered_by_gap: IA-GAP-021
@@ -1529,10 +1530,10 @@ terminal_states:
     escalation_path: null
     governance_authority: null
     human_authorised_exit_required: true
-    location: libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:304
+    location: libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:366
     notification_targets: null
     re_enablement_creates_new_instance: true
-    reason: An irreversible action (database_delete) at line 304 in an AI-adjacent
+    reason: An irreversible action (database_delete) at line 366 in an AI-adjacent
       file has no authorisation gate. Once executed, it cannot be undone.
     response_time_sla: null
     triggered_by_gap: IA-GAP-022
@@ -1542,10 +1543,10 @@ terminal_states:
     escalation_path: null
     governance_authority: null
     human_authorised_exit_required: true
-    location: libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:949
+    location: libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:1032
     notification_targets: null
     re_enablement_creates_new_instance: true
-    reason: An irreversible action (database_write) at line 949 in an AI-adjacent
+    reason: An irreversible action (database_write) at line 1032 in an AI-adjacent
       file has no authorisation gate. Once executed, it cannot be undone.
     response_time_sla: null
     triggered_by_gap: IA-GAP-023
@@ -1594,10 +1595,10 @@ terminal_states:
     escalation_path: null
     governance_authority: null
     human_authorised_exit_required: true
-    location: libs\langgraph\langgraph\pregel\_loop.py:753
+    location: libs\langgraph\langgraph\pregel\_loop.py:764
     notification_targets: null
     re_enablement_creates_new_instance: true
-    reason: An irreversible action (database_write) at line 753 in an AI-adjacent
+    reason: An irreversible action (database_write) at line 764 in an AI-adjacent
       file has no authorisation gate. Once executed, it cannot be undone.
     response_time_sla: null
     triggered_by_gap: IA-GAP-027
@@ -1730,7 +1731,7 @@ drift_class_candidates:
     legion_detected:
       code: E14-L1
       name: ''
-    location: libs\checkpoint\langgraph\checkpoint\memory\__init__.py:670
+    location: libs\checkpoint\langgraph\checkpoint\memory\__init__.py:664
     monitoring_frequency: Per-turn monitoring recommended
     name: ''
     plain_english: ''
@@ -1752,7 +1753,7 @@ drift_class_candidates:
     legion_detected:
       code: E14-L1
       name: ''
-    location: libs\checkpoint\langgraph\checkpoint\memory\__init__.py:666
+    location: libs\checkpoint\langgraph\checkpoint\memory\__init__.py:660
     monitoring_frequency: Per-turn monitoring recommended
     name: ''
     plain_english: ''
@@ -2722,26 +2723,26 @@ qa_test_recommendations:
 
 governance_intelligence:
   coverage_by_consequence_type:
-    database: 15.384615384615385
+    database: 16.666666666666664
     deployment: 0.0
-    external_api: 12.5
-    file_system: 13.513513513513514
-    state_mutation: 28.98062342038753
+    external_api: 0.0
+    file_system: 13.88888888888889
+    state_mutation: 28.76830318690784
   coverage_by_decision_type:
-    agent_invocation: 70.0
-    conditional_branch: 24.76780185758514
-    function_call: 36.43122676579926
-    loop: 27.309236947791167
-    ternary: 26.865671641791046
+    agent_invocation: 66.66666666666666
+    conditional_branch: 25.194401244167963
+    function_call: 35.96837944664031
+    loop: 27.125506072874494
+    ternary: 28.57142857142857
     try_except: 13.88888888888889
   critical_decision_coverage_percent: 0.0
   gamma_agent_handover: 0.18
   gamma_critical: 0.0
-  overall_governance_coverage_percent: 27.877838684416602
+  overall_governance_coverage_percent: 27.710843373493976
   pre_node_proximity: CRITICAL (>50% of critical decisions ungoverned)
   structural_gamma_overall: 0.28
   t_amplification_active: true
-  tendency_score: 2.661538670019348
+  tendency_score: 2.6617018106983243
   tendency_state: failure
 
 # ───────────────────────────────────────────────────────────────
@@ -2775,41 +2776,41 @@ agent_governance:
 
 critical_decisions:
   critical_path:
-  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:395
-  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:404
-  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:405
-  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:409
-  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:412
-  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:414
-  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:419
-  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:427
-  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:430
-  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:433
-  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:437
-  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:441
-  critical_ungoverned: 78
+  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:457
+  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:466
+  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:467
+  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:471
+  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:474
+  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:476
+  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:481
+  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:489
+  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:492
+  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:495
+  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:499
+  - libs\checkpoint-sqlite\langgraph\store\sqlite\base.py:503
+  critical_ungoverned: 73
   most_influential:
   - criticality: 0.5
     governed: true
     location: libs\langgraph\langgraph\pregel\_runner.py:695
-    pagerank: 0.0002706876883340508
+    pagerank: 0.0002757524484724456
   - criticality: 0.5
     governed: true
     location: libs\checkpoint\langgraph\store\base\embed.py:387
-    pagerank: 0.00024126244920025293
+    pagerank: 0.0002457766420810646
   - criticality: 0.5
     governed: true
     location: libs\checkpoint\langgraph\store\base\embed.py:394
-    pagerank: 0.00023242662665006695
+    pagerank: 0.00023677549497504996
   - criticality: 0.5
     governed: true
     location: libs\checkpoint\langgraph\store\base\embed.py:380
-    pagerank: 0.00022816973606328028
+    pagerank: 0.00023243895492252597
   - criticality: 0.5
     governed: true
     location: libs\checkpoint\langgraph\store\base\embed.py:390
-    pagerank: 0.00022659697333980174
-  total_critical: 78
+    pagerank: 0.00023083676468426816
+  total_critical: 73
 
 # ───────────────────────────────────────────────────────────────
 # SECTION 13 — GOVERNANCE SCORE
@@ -2819,14 +2820,14 @@ critical_decisions:
 # ───────────────────────────────────────────────────────────────
 
 structural_gamma:
-  governed_decision_points: 353
+  governed_decision_points: 344
   interpretation: Only 28% of decision points are governed. The system is structurally
     ungoverned. The Drift Node is the global energy minimum.
   note: Structural proxy only — not runtime Gamma. Measures whether governance mechanisms
     are structurally present.
   status: BELOW_THRESHOLD
   threshold: 0.9
-  total_decision_points: 1268
+  total_decision_points: 1239
   value: 0.28
 
 # ───────────────────────────────────────────────────────────────

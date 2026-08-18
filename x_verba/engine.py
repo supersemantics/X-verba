@@ -229,6 +229,65 @@ _GENERIC_AI_CALL_METHODS = {
     ".chat(", ".ask(", ".query(", "pipeline(",
 }
 
+# AI_CALL_METHODS entries that read as ordinary English on any "agent" or
+# "chain" object with no LangChain involvement at all (an insurance/travel
+# agent's .run(), a CI runner agent, a workflow "chain" object's .invoke()).
+# Unlike _GENERIC_AI_CALL_METHODS above, these aren't gated on the call's
+# own root being a recognised import — a bare local variable named `agent`
+# or `chain` was never going to be import-tracked. Instead they require the
+# whole file to show LangChain corroboration (see ASTAnalyser._langchain_corroborated).
+_AMBIGUOUS_AI_CALL_METHODS = {
+    "chain.run", "chain.invoke", "chain.stream",
+    "agent.run", "agent.invoke",
+}
+
+# AI_CALL_METHODS entries generic enough to belong to an unrelated
+# non-AI SDK's own API shape, keyed to which provider's import must be
+# present somewhere in the file to corroborate them. Confirmed false
+# positive: Twilio's Python SDK uses the identical call shape
+# `client.messages.create(...)` for sending SMS — nothing to do with
+# Anthropic at all, but "messages.create" alone reads as generically
+# plausible AI vocabulary. "client.chat" is the same story for any
+# chat-capable client object (support-desk SDKs, chat-bot frameworks)
+# with no OpenAI involvement. Checked against self.ai_imports.values()
+# (the file's own precisely-tracked imports) rather than a regex scan,
+# since ASTAnalyser already collects that.
+_PROVIDER_AMBIGUOUS_AI_CALL_METHODS = {
+    "client.chat": "openai",
+    "messages.create": "anthropic",
+    "client.messages": "anthropic",
+}
+
+
+def _call_matches_pattern(call_str: str, pattern: str) -> bool:
+    """Match an AI_CALL_METHODS / AGENT_FRAMEWORK_PATTERNS / CONSEQUENCE_TYPE_PATTERNS
+    entry against a dotted call expression (e.g. "chain.invoke", "db.delete",
+    "Agent") extracted from Python's AST.
+
+    Anchored, not a bare substring check: "chain.run" matches "chain.run" or
+    "obj.chain.run" (as a trailing ".chain.run" segment) but NOT
+    "supply_chain.run_pipeline" — the substring "chain.run" occurs inside that
+    call string but isn't the actual attribute chain being called. Likewise
+    "Agent(" (rstripped to "Agent") matches a bare `Agent(...)` call or
+    `x.Agent(...)`, not an identifier that merely contains the letters
+    "Agent" (e.g. "MyAgentWrapper.create()").
+
+    Patterns already written with a leading dot (e.g. ".generate(") are
+    themselves the trailing segment to match — used as-is via endswith()
+    rather than prefixed with another dot.
+
+    Mirrors PatternDecisionPointAnalyser._pattern_matches_call, which already
+    applies this same anchoring for the JS/TS/Go/Rust/C# pattern-based path;
+    this keeps the Python AST path (nominally the "full" analysis) at least
+    as precise, not looser.
+    """
+    p = pattern.rstrip("(")
+    if not p:
+        return False
+    if p.startswith("."):
+        return call_str.endswith(p)
+    return call_str == p or call_str.endswith("." + p)
+
 IRREVERSIBLE_ACTION_PATTERNS = {
     "email_send": [
         "send_mail", "send_message", "smtp.sendmail", "ses.send_email",
@@ -264,8 +323,117 @@ AGENT_FRAMEWORK_PATTERNS = {
     "crewai": ["Crew(", "crew.kickoff", "Agent(", "Task(", "execute_task", "kickoff("],
     "autogen": ["UserProxyAgent", "AssistantAgent", "initiate_chat", "groupchat"],
     "langchain": ["AgentExecutor", "agent.invoke", "agent.run", "create_agent", "chain.run", "chain.invoke"],
-    "langgraph": ["StateGraph", "graph.invoke", "add_node", "add_edge"],
+    # snake_case (add_node/add_edge) is LangGraph's Python API; camelCase
+    # (addNode/addEdge) is LangGraph.js's — genuinely different identifiers,
+    # not a case-folding difference, so both must be listed explicitly for
+    # this shared dict to cover both of LangGraph's two official languages.
+    # create_react_agent (langgraph.prebuilt) is LangGraph's high-level
+    # "quick start" agent factory — confirmed real-world miss: a real
+    # LangGraph MCP-agents repo (braincrew-lab/langgraph-mcp-agents) uses
+    # only this, never StateGraph/add_node/add_edge directly, and had zero
+    # langgraph decision points before this entry was added. Distinctive
+    # compound name, no corroboration needed, same tier as StateGraph.
+    # create_swarm / create_handoff_tool (langgraph_swarm) are the
+    # official langgraph-ai/langgraph-swarm-py package's top-level API —
+    # confirmed real-world miss: its own documented usage example (a
+    # downstream caller building a swarm of agents with handoff tools,
+    # never touching StateGraph/add_node directly) produced zero langgraph
+    # findings before these entries were added.
+    "langgraph": [
+        "StateGraph", "graph.invoke", "add_node", "add_edge", "addNode", "addEdge",
+        "create_react_agent", "create_swarm", "create_handoff_tool",
+    ],
 }
+
+# Some AGENT_FRAMEWORK_PATTERNS entries are call shapes that legitimate,
+# entirely unrelated code also uses verbatim — most notably LangGraph's
+# add_node()/add_edge()/graph.invoke(), which are also NetworkX's own
+# graph-building API (a far more widely used general-purpose graph library
+# with no agent framework involved at all; `G.add_node()` / `G.add_edge()`
+# is standard NetworkX idiom). Anchored call-string matching (see
+# _call_matches_pattern) rules out substring collisions like
+# "batch_add_node_safely", but it can't distinguish two libraries that
+# genuinely share a method name. These entries only count as a real
+# framework match when the file also shows a corroborating signal for that
+# framework — an import, or a call to that framework's own distinctive,
+# unambiguous API (its "StateGraph" entry above, no corroboration needed).
+_AMBIGUOUS_FRAMEWORK_PATTERNS = {
+    "langgraph": {"graph.invoke", "add_node", "add_edge", "addNode", "addEdge"},
+    # LangChain's own generic method names collide with unrelated, very
+    # common vocabulary: "agent.run()" / "agent.invoke()" also read on any
+    # domain "agent" object (insurance/travel/customer-service agents, CI
+    # runner agents, monitoring agents), and "create_agent(" is a plausible
+    # factory-function name outside LangChain entirely. "AgentExecutor" and
+    # "LLMChain" are left out of this set deliberately — real LangChain
+    # class names, not generic English, safe to match unconditionally (and
+    # doing so also corroborates the ambiguous ones below in the same file).
+    "langchain": {"agent.invoke", "agent.run", "chain.run", "chain.invoke", "create_agent"},
+}
+
+_FRAMEWORK_CORROBORATION_RE = {
+    "langgraph": re.compile(
+        # Python: `import langgraph`, `from langgraph.graph import ...`,
+        # `from langgraph_sdk import ...`, `from langgraph_checkpoint...`.
+        # JS/TS (LangGraph.js ships as the single scoped package
+        # "@langchain/langgraph", no unscoped "langgraph" on npm):
+        # `import { StateGraph } from "@langchain/langgraph"`,
+        # `require("@langchain/langgraph")`.
+        r'^\s*(?:import|from)\s+langgraph(?:[._]\w+)*\b'
+        r'|[\'"]@langchain/langgraph(?:[\w/-]*)[\'"]'
+        r'|\bStateGraph\b',
+        re.MULTILINE,
+    ),
+    "langchain": re.compile(
+        # Python: `import langchain`, `import langchain_openai`,
+        # `from langchain.chat_models import ...`,
+        # `from langchain_community.llms import ...` — "langchain"
+        # optionally followed by more `.foo`/`_foo` module-path segments.
+        # JS/TS (LangChain.js ships both the unscoped "langchain" package
+        # and scoped "@langchain/*" ones — core, openai, anthropic, etc.):
+        # `import { AgentExecutor } from "langchain/agents"`,
+        # `import { ChatOpenAI } from "@langchain/openai"`,
+        # `require("langchain")` / `require("@langchain/core")`.
+        r'^\s*(?:import|from)\s+langchain(?:[._]\w+)*\b'
+        r'|[\'"](?:langchain(?:/[\w-]+)?|@langchain/[\w-]+)[\'"]'
+        r'|\bAgentExecutor\b|\bLLMChain\b',
+        re.MULTILINE,
+    ),
+}
+
+
+# Providers/frameworks X-Verba scans for by default. Everything outside
+# this set (crewai, autogen, google, cohere, aws_bedrock, huggingface,
+# llama_index, etc.) still has detection code — it's only suppressed from
+# the default report, not deleted — because those detectors range from
+# thoroughly precision-audited (this set) to varying, unaudited quality.
+# See ScanEngine(all_frameworks=True) to scan everything.
+#
+# "ai_framework" (the generic fallback label for an AI call whose specific
+# provider couldn't be identified) is deliberately never filtered here —
+# it doesn't claim to be any particular out-of-scope framework, so hiding
+# it would mask real, unclassified AI usage rather than narrow scope.
+#
+# "openai_agents_sdk" (OpenAI's own official agent framework — Agent(),
+# Runner.run(), function_tool(), handoff(), tagged separately from plain
+# "openai" client calls via _GUARDED_PROVIDER_IMPORTS) is included here
+# even though it's a distinct label from "openai" — it's still squarely
+# "OpenAI SDK", the same way "langgraph" sits alongside "langchain" as its
+# own entry rather than being folded in or left out. Confirmed real-world
+# gap before this was added: on 3 real repos built on this SDK (including
+# openai/openai-agents-python itself), every finding was suppressed by
+# default — one repo built entirely around it showed only 1 generic
+# finding with nothing else visible.
+DEFAULT_FRAMEWORK_SCOPE = frozenset({"openai", "langchain", "langgraph", "openai_agents_sdk"})
+
+
+def _framework_corroborated(source: str, framework: str) -> bool:
+    """True if `framework` needs no corroboration for this pattern (default),
+    or the file's source shows the corroborating import/distinctive-API
+    signal registered for it in _FRAMEWORK_CORROBORATION_RE."""
+    pattern = _FRAMEWORK_CORROBORATION_RE.get(framework)
+    if pattern is None:
+        return True
+    return bool(pattern.search(source))
 
 # Method names that hand control (and data) from one agent object to another —
 # used by Pass 4 (AgentHandoverAnalyser) to detect agent-to-agent transfers.
@@ -481,11 +649,16 @@ class ASTAnalyser:
         self.ai_imports = {}
         self.ai_calls = []
         self.assignments = {}
+        self._langchain_corroborated = True
 
     def analyse(self, source: str, filepath: str) -> dict:
         self.ai_imports = {}
         self.ai_calls = []
         self.assignments = {}
+        # See _AMBIGUOUS_AI_CALL_METHODS: a plain agent.run()/chain.invoke()
+        # call only counts as LangChain if this file also shows a
+        # corroborating LangChain import or distinctive class name.
+        self._langchain_corroborated = _framework_corroborated(source, "langchain")
 
         try:
             tree = _ast_parse_quiet(source, filepath)
@@ -601,7 +774,7 @@ class ASTAnalyser:
             return self.ai_imports[root]
 
         for method in AI_CALL_METHODS:
-            if method.rstrip("(") in call_str:
+            if _call_matches_pattern(call_str, method):
                 # Generic method names (.chat(, .query(, .predict(, pipeline(, ...)
                 # appear on plenty of non-AI objects (a DB client's .query(), an
                 # HTTP client's .complete(), a Workflow's pipeline()). Without a
@@ -611,6 +784,11 @@ class ASTAnalyser:
                 # (chat.completions.create, LLMChain, ChatOpenAI, etc.) are
                 # distinctive enough to stand on their own.
                 if method in _GENERIC_AI_CALL_METHODS and root not in self.ai_imports:
+                    continue
+                if method in _AMBIGUOUS_AI_CALL_METHODS and not self._langchain_corroborated:
+                    continue
+                needed_provider = _PROVIDER_AMBIGUOUS_AI_CALL_METHODS.get(method)
+                if needed_provider and needed_provider not in self.ai_imports.values():
                     continue
                 if any(x in call_lower for x in ["openai", "chatcompletion", "completion"]):
                     return "openai"
@@ -636,6 +814,16 @@ JS_AI_PATTERNS = [
     (r'new\s+ChatAnthropic\s*\(', "langchain"),
     (r'chain\.invoke\s*\(', "langchain"),
     (r'agent\.invoke\s*\(', "langchain"),
+    # LangChain.js's "universal model loader" (`langchain/chat_models/
+    # universal`) — dynamically instantiates whichever provider the caller
+    # names at runtime, so there's no `new ChatOpenAI(...)`/etc. call site
+    # to match. Confirmed real-world miss: a production LangGraph.js repo
+    # (mayooear/ai-pdf-chatbot-langchain) routes every model load through
+    # this exact function and had zero ai_integrations findings before this
+    # pattern was added — the fluent-chained StateGraph.addNode/addEdge
+    # calls were still correctly detected, only the LLM-call side was blind.
+    # Distinctive name, no import-corroboration needed.
+    (r'\binitChatModel\s*\(', "langchain"),
     (r'generateText\s*\(', "vercel_ai"),
     (r'streamText\s*\(', "vercel_ai"),
     (r'generateObject\s*\(', "vercel_ai"),
@@ -667,6 +855,16 @@ JS_AI_PATTERNS = [
     (r'\bConverseCommand\b', "aws_bedrock"),
     (r'\bInvokeModelCommand\b', "aws_bedrock"),
 ]
+
+# JS_AI_PATTERNS entries generic enough that unrelated code uses the exact
+# same call shape with no LangChain involvement (any JS/TS object named
+# `chain` or `agent` with an `.invoke()` method) — same ambiguity as
+# AGENT_FRAMEWORK_PATTERNS' langchain entries, applied here to the separate
+# AI-integration-call pattern list. See _detect_ai_calls_pattern.
+_AMBIGUOUS_AI_PATTERNS = {
+    r'chain\.invoke\s*\(',
+    r'agent\.invoke\s*\(',
+}
 
 # github.com/sashabaranov/go-openai, anthropic-sdk-go, langchaingo, google genai SDK, ollama.
 GO_AI_PATTERNS = [
@@ -741,6 +939,12 @@ def _detect_ai_calls_pattern(
     languages. Skips comments and obvious string contexts.
     """
     calls = []
+    _corroboration_cache: dict = {}
+
+    def _corroborated(provider: str) -> bool:
+        if provider not in _corroboration_cache:
+            _corroboration_cache[provider] = _framework_corroborated(content, provider)
+        return _corroboration_cache[provider]
 
     for i, line in enumerate(lines, 1):
         stripped = line.strip()
@@ -749,6 +953,8 @@ def _detect_ai_calls_pattern(
 
         for pattern, provider in ai_patterns:
             if re.search(pattern, line):
+                if pattern in _AMBIGUOUS_AI_PATTERNS and not _corroborated(provider):
+                    continue
                 if line.count('"') % 2 == 0 and line.count("'") % 2 == 0:
                     calls.append({
                         "line": i,
@@ -876,6 +1082,13 @@ class DecisionPointAnalyser:
         lines = source.splitlines()
         points = []
 
+        # Computed once per file: which ambiguous-pattern frameworks (see
+        # _AMBIGUOUS_FRAMEWORK_PATTERNS) have a corroborating signal here.
+        framework_corroboration = {
+            fw: _framework_corroborated(source, fw)
+            for fw in _FRAMEWORK_CORROBORATION_RE
+        }
+
         for node in ast.walk(tree):
             if isinstance(node, ast.If):
                 points.append(self._conditional(node, lines, filepath))
@@ -886,7 +1099,7 @@ class DecisionPointAnalyser:
             elif isinstance(node, ast.Try):
                 points.append(self._try_except(node, lines, filepath))
             elif isinstance(node, ast.Call):
-                call_point = self._function_call(node, lines, filepath)
+                call_point = self._function_call(node, lines, filepath, framework_corroboration)
                 if call_point:
                     points.append(call_point)
 
@@ -943,24 +1156,35 @@ class DecisionPointAnalyser:
             "severity": "medium" if not has_recovery else "low",
         }
 
-    def _function_call(self, node: ast.Call, lines: list, filepath: str) -> Optional[dict]:
+    def _function_call(
+        self, node: ast.Call, lines: list, filepath: str,
+        framework_corroboration: Optional[dict] = None,
+    ) -> Optional[dict]:
         call_str = self._get_call_string(node.func)
         if not call_str:
             return None
 
         line_num = getattr(node, "lineno", 0)
         line_text = self._line_text(lines, line_num)
+        framework_corroboration = framework_corroboration or {}
 
         is_agent_call = False
         framework = None
         for fw, patterns in AGENT_FRAMEWORK_PATTERNS.items():
-            if any(p.rstrip("(") in call_str for p in patterns):
+            ambiguous = _AMBIGUOUS_FRAMEWORK_PATTERNS.get(fw, frozenset())
+            for p in patterns:
+                if not _call_matches_pattern(call_str, p):
+                    continue
+                if p.rstrip("(") in ambiguous and not framework_corroboration.get(fw, True):
+                    continue
                 is_agent_call = True
                 framework = fw
                 break
+            if is_agent_call:
+                break
 
         is_consequential = is_agent_call or any(
-            p.rstrip("(") in call_str
+            _call_matches_pattern(call_str, p)
             for patterns in CONSEQUENCE_TYPE_PATTERNS.values()
             for p in patterns
         )
@@ -1034,6 +1258,13 @@ class PatternDecisionPointAnalyser:
         lines = source.splitlines()
         points = []
 
+        # Computed once per file: which ambiguous-pattern frameworks (see
+        # _AMBIGUOUS_FRAMEWORK_PATTERNS) have a corroborating signal here.
+        framework_corroboration = {
+            fw: _framework_corroborated(source, fw)
+            for fw in _FRAMEWORK_CORROBORATION_RE
+        }
+
         i = 0
         n = len(lines)
         while i < n:
@@ -1074,7 +1305,7 @@ class PatternDecisionPointAnalyser:
             elif self.TERNARY_RE and self._is_ternary(stripped):
                 points.append(self._ternary(stripped, line_num, filepath))
 
-            call_point = self._function_call(stripped, line_num, filepath)
+            call_point = self._function_call(stripped, line_num, filepath, framework_corroboration)
             if call_point:
                 points.append(call_point)
 
@@ -1267,16 +1498,27 @@ class PatternDecisionPointAnalyser:
                 break
         return c == p or c.endswith("." + p) or c.endswith("::" + p)
 
-    def _function_call(self, stripped: str, line_num: int, filepath: str) -> Optional[dict]:
+    def _function_call(
+        self, stripped: str, line_num: int, filepath: str,
+        framework_corroboration: Optional[dict] = None,
+    ) -> Optional[dict]:
+        framework_corroboration = framework_corroboration or {}
         for match in self._CALL_RE.finditer(stripped):
             call_str = match.group(1)
 
             is_agent_call = False
             framework = None
             for fw, patterns in AGENT_FRAMEWORK_PATTERNS.items():
-                if any(self._pattern_matches_call(call_str, p) for p in patterns):
+                ambiguous = _AMBIGUOUS_FRAMEWORK_PATTERNS.get(fw, frozenset())
+                for p in patterns:
+                    if not self._pattern_matches_call(call_str, p):
+                        continue
+                    if p.rstrip("(") in ambiguous and not framework_corroboration.get(fw, True):
+                        continue
                     is_agent_call = True
                     framework = fw
+                    break
+                if is_agent_call:
                     break
 
             is_consequential = is_agent_call or any(
@@ -3484,9 +3726,16 @@ class ScanEngine:
     v0.2.0 — context profiles, fixed Gamma, robust error handling.
     """
 
-    def __init__(self, verbose: bool = False, context_profile: str = "ai-app"):
+    def __init__(
+        self, verbose: bool = False, context_profile: str = "ai-app",
+        all_frameworks: bool = False,
+    ):
         self.verbose = verbose
         self.context_profile = context_profile
+        # False (default): only OpenAI/LangChain/LangGraph findings are
+        # reported (DEFAULT_FRAMEWORK_SCOPE). True: report every provider/
+        # framework the underlying detectors recognise, audited or not.
+        self.all_frameworks = all_frameworks
         self.profile = CONTEXT_PROFILES.get(context_profile, CONTEXT_PROFILES["ai-app"])
         self.dc_classes = self._load_taxonomy("dc_classes.json")
         self.so_operators = self._load_taxonomy("so_operators.json")
@@ -3560,8 +3809,9 @@ class ScanEngine:
             "scan_date": datetime.now(timezone.utc).isoformat(),
             "repo": str(path),
             "identity_key": identity_key,
-            "verba_version": "0.5.0",
+            "verba_version": "0.6.0",
             "context_profile": self.context_profile,
+            "all_frameworks": self.all_frameworks,
             "reviewed": False,
             "focus_paths": focus_paths or [],
         }
@@ -3581,6 +3831,8 @@ class ScanEngine:
 
             t2 = progress.add_task("Pass 2 — Detecting AI integrations (AST)...", total=None)
             primitives = self._detect_primitives(parsed, path)
+            if not self.all_frameworks:
+                self._apply_framework_scope(primitives)
             try:
                 primitives["agent_handovers"].extend(_detect_pubsub_messaging(parsed))
             except Exception as e:
@@ -3864,6 +4116,29 @@ class ScanEngine:
             if f"import {stem}" in content or f"from {stem}" in content:
                 return True
         return False
+
+    def _apply_framework_scope(self, primitives: dict) -> None:
+        """Mutates `primitives` in place, dropping ai_integrations and
+        agent_invocation decision points whose provider/framework isn't in
+        DEFAULT_FRAMEWORK_SCOPE. Only called when all_frameworks is False.
+
+        Deliberately does NOT touch primitives["agent_handovers"] — that
+        subsystem's 9 detection families are structural-pattern-based, not
+        framework-tagged per finding (e.g. its graph/builder-edge family
+        detects LangGraph, Microsoft Agent Framework, AutoGen, and Haystack
+        with one shared detector, recording no per-finding framework label
+        at all), so it can't be scoped this way without much larger
+        surgery. It stays framework-agnostic/always-on regardless of this
+        flag — see the "Handover scope" decision in the project notes.
+        """
+        primitives["ai_integrations"] = [
+            a for a in primitives.get("ai_integrations", [])
+            if a.get("provider") in DEFAULT_FRAMEWORK_SCOPE or a.get("provider") == "ai_framework"
+        ]
+        primitives["decision_points"] = [
+            d for d in primitives.get("decision_points", [])
+            if d.get("type") != "agent_invocation" or d.get("framework") in DEFAULT_FRAMEWORK_SCOPE
+        ]
 
     def _detect_primitives(self, parsed: list, base_path: Path) -> dict:
         primitives = {
@@ -4707,6 +4982,7 @@ class ScanEngine:
             "structural_gamma": gamma.get("proxy_value"),
             "governance_status": gamma.get("status"),
             "context_profile": self.context_profile,
+            "all_frameworks": self.all_frameworks,
             "decision_points_detected": len(results.get("decision_points", [])),
             "decision_point_gaps": len(decision_point_gaps),
             "decision_point_gaps_critical": dp_critical,

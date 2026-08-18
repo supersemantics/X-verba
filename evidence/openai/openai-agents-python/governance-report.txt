@@ -2,18 +2,18 @@
 X-VERBA SCAN RESULTS
 ════════════════════════════════════════════════════════════════════════════════
 
-Repository:  C:\Users\OEM\AppData\Local\Temp\claude\H--Claude-Code-Building-CLI-Tool\d7566a6d-1d22-462a-a734-0028b91175ea\scratchpad\public_repos\langgraph
-Scan Date:   2026-08-17T18:51:48.741416+00:00
+Repository:  C:\Users\OEM\AppData\Local\Temp\claude\H--Claude-Code-Building-CLI-Tool\d7566a6d-1d22-462a-a734-0028b91175ea\scratchpad\public_repos\openai-agents-python
+Scan Date:   2026-08-17T19:42:03.537061+00:00
 
 ════════════════════════════════════════════════════════════════════════════════
 GOVERNANCE SCORECARD
 ════════════════════════════════════════════════════════════════════════════════
 
-Structural Gamma:                  0.28 / 1.0  [BELOW_THRESHOLD]
-  (28% of governance-relevant decision points have an observable governance checkpoint.)
-  ├─ Total Decision Points:        1239
-  ├─ Governed Decision Points:     344 (28%)
-  └─ Ungoverned Decision Points:   895 (72%)
+Structural Gamma:                  0.29 / 1.0  [BELOW_THRESHOLD]
+  (29% of governance-relevant decision points have an observable governance checkpoint.)
+  ├─ Total Decision Points:        2671
+  ├─ Governed Decision Points:     767 (29%)
+  └─ Ungoverned Decision Points:   1904 (71%)
 
 Tendency State:                     FAILURE
   ├─ T-Amplification Active:       Yes (10 high-centrality ungoverned decisions)
@@ -24,15 +24,16 @@ Tendency State:                     FAILURE
 AI VISIBILITY
 ════════════════════════════════════════════════════════════════════════════════
 
-AI Integrations Detected:          2
-  ├─ Governed:                     0 (0%)
-  ├─ Ungoverned:                   2 (100%)
+AI Integrations Detected:          303
+  ├─ Governed:                     8 (3%)
+  ├─ Ungoverned:                   295 (97%)
   └─ High-Risk Patterns:           0 (high temperature + user input + dynamic prompt)
 
-Candidate Governance Nodes:        2  (X-Verba inferences — confirm or correct in governance contract)
+Candidate Governance Nodes:        303  (X-Verba inferences — confirm or correct in governance contract)
 
 Providers:
-  └─ Langchain                  2
+  ├─ Openai                     233
+  └─ Openai_Agents_Sdk          70
 
 AI-Related Drift Class Findings:    1
   └─ DC-I11                     1
@@ -41,93 +42,93 @@ AI-Related Drift Class Findings:    1
 AGENT VISIBILITY
 ════════════════════════════════════════════════════════════════════════════════
 
-Agents Detected:                    26
-Agent Handovers Detected:           38
-  ├─ Governed:                     7 (18%)
-  └─ Ungoverned:                   31 (82%)
+Agents Detected:                    2
+Agent Handovers Detected:           1
+  ├─ Governed:                     0 (0%)
+  └─ Ungoverned:                   1 (100%)
 
-Agent Chains:                        2
-  ├─ Fully Governed:               1
+Agent Chains:                        1
+  ├─ Fully Governed:               0
   ├─ Partially Governed:           0
   └─ Ungoverned:                   1
 
-Agent Clusters:                      8
-  ├─ Cluster Risk (Avg Chain Risk): 0.50
-  └─ Cluster Governance Gaps:      6 (6 with 2+ ungated handovers)
+Agent Clusters:                      1
+  ├─ Cluster Risk (Avg Chain Risk): 1.00
+  └─ Cluster Governance Gaps:      0 (0 with 2+ ungated handovers)
 
 ════════════════════════════════════════════════════════════════════════════════
 DECISION VISIBILITY
 ════════════════════════════════════════════════════════════════════════════════
 
-Decision Points Detected:            6841
+Decision Points Detected:            14616
   ├─ Low Consequence          0 (0%)
   ├─ Medium Consequence       0 (0%)
-  ├─ High Consequence         6768 (99%)
-  └─ Critical Consequence     73 (1%)
+  ├─ High Consequence         14517 (99%)
+  └─ Critical Consequence     99 (1%)
 
 Governance by Consequence Type:
-  ├─ state_mutation (1161):  334 governed, 827 ungoverned
-  ├─ database_write (31):  5 governed, 26 ungoverned
-  ├─ file_write (24):  2 governed, 22 ungoverned
-  ├─ file_delete (7):  3 governed, 4 ungoverned
-  ├─ system_command (7):  0 governed, 7 ungoverned
-  ├─ production_release (6):  0 governed, 6 ungoverned
-  ├─ database_delete (5):  1 governed, 4 ungoverned
-  └─ external_api_call (4):  0 governed, 4 ungoverned
+  ├─ state_mutation (2557):  747 governed, 1810 ungoverned
+  ├─ file_write (51):  16 governed, 35 ungoverned
+  ├─ production_release (23):  2 governed, 21 ungoverned
+  ├─ system_command (16):  2 governed, 14 ungoverned
+  ├─ file_delete (10):  0 governed, 10 ungoverned
+  ├─ database_write (8):  0 governed, 8 ungoverned
+  ├─ database_delete (7):  0 governed, 7 ungoverned
+  └─ external_api_call (2):  0 governed, 2 ungoverned
 
 Decision Influence Ranking (PageRank):
-  ├─ Most Influential Decision:   libs\langgraph\langgraph\pregel\_runner.py:695 (score=0.000276, criticality=0.50)
-  └─ Governance Choke Point:      libs\checkpoint\langgraph\store\base\embed.py:382 (score=0.000219, ungoverned)
+  ├─ Most Influential Decision:   integration_tests\_contract_support.py:1668 (score=0.000125, criticality=0.50)
+  └─ Governance Choke Point:      integration_tests\_contract_support.py:1668 (score=0.000125, ungoverned)
 
 ════════════════════════════════════════════════════════════════════════════════
 GOVERNANCE COVERAGE
 ════════════════════════════════════════════════════════════════════════════════
 
-Overall Coverage:                    28%
+Overall Coverage:                    29%
 
 Coverage by Decision Type:
-  ├─ agent_invocation         67%
-  ├─ conditional_branch       25%
-  ├─ function_call            36%
-  ├─ loop                     27%
-  ├─ ternary                  29%
-  └─ try_except               14%
+  ├─ conditional_branch       29%
+  ├─ function_call            37%
+  ├─ loop                     24%
+  ├─ ternary                  20%
+  └─ try_except               10%
 
 Coverage by Checkpoint Type:
-  ├─ Control Flow             334 decisions
-  └─ Caller Guard             11 decisions
+  ├─ Control Flow             720 decisions
+  ├─ Caller Guard             43 decisions
+  └─ Dependency Injection     4 decisions
 
 Critical Decision Coverage:
-  ├─ Critical Decisions:           73
-  ├─ Governed:                     0 (0%)
-  └─ Ungoverned:                   73 (100%)
+  ├─ Critical Decisions:           99
+  ├─ Governed:                     2 (2%)
+  └─ Ungoverned:                   97 (98%)
 
 ════════════════════════════════════════════════════════════════════════════════
 CRITICAL FINDINGS
 ════════════════════════════════════════════════════════════════════════════════
 
-1. libs\checkpoint\langgraph\checkpoint\serde\jsonplus.py:515
-     Risk:                Decision point (conditional_branch) at libs\checkpoint\langgraph\checkpoint\serde\jsonplus.py:515 leads to a deployment action (irreversible) with no Pre-Node guarding it (strength 0.0).
+1. .github\scripts\update_rclone_pin.py:177
+     Risk:                Decision point (loop) at .github\scripts\update_rclone_pin.py:177 leads to a deployment action (irreversible) with a weak Pre-Node guarding it (strength 0.6).
      Recommended Action:  Add or strengthen a Pre-Node (validation/authorization/approval) immediately before this decision point.
      Business Impact:     criticality=2.00, governed=False
 
-2. libs\checkpoint\langgraph\checkpoint\serde\jsonplus.py:519
-     Risk:                Decision point (conditional_branch) at libs\checkpoint\langgraph\checkpoint\serde\jsonplus.py:519 leads to a deployment action (irreversible) with a weak Pre-Node guarding it (strength 0.6).
+2. .github\scripts\update_rclone_pin.py:267
+     Risk:                Decision point (conditional_branch) at .github\scripts\update_rclone_pin.py:267 leads to a deployment action (irreversible) with no Pre-Node guarding it (strength 0.0).
      Recommended Action:  Add or strengthen a Pre-Node (validation/authorization/approval) immediately before this decision point.
      Business Impact:     criticality=2.00, governed=False
 
-3. libs\checkpoint\langgraph\checkpoint\serde\jsonplus.py:518
-     Risk:                Decision point (ternary) at libs\checkpoint\langgraph\checkpoint\serde\jsonplus.py:518 leads to a deployment action (irreversible) with a weak Pre-Node guarding it (strength 0.6).
+3. .github\scripts\update_rclone_pin.py:178
+     Risk:                Decision point (try_except) at .github\scripts\update_rclone_pin.py:178 leads to a deployment action (irreversible) with a weak Pre-Node guarding it (strength 0.6).
      Recommended Action:  Add or strengthen a Pre-Node (validation/authorization/approval) immediately before this decision point.
      Business Impact:     criticality=2.00, governed=False
 
-4. libs\checkpoint\langgraph\checkpoint\serde\jsonplus.py:521
-     Risk:                Decision point (try_except) at libs\checkpoint\langgraph\checkpoint\serde\jsonplus.py:521 leads to a deployment action (irreversible) with a weak Pre-Node guarding it (strength 0.6).
+4. src\agents\result.py:391
+     Risk:                Decision point (conditional_branch) at src\agents\result.py:391 leads to a deployment action (irreversible) with no Pre-Node guarding it (strength 0.0).
      Recommended Action:  Add or strengthen a Pre-Node (validation/authorization/approval) immediately before this decision point.
      Business Impact:     criticality=2.00, governed=False
 
-5. libs\langgraph\langgraph\pregel\main.py:3422
-     Risk:                Decision point (conditional_branch) at libs\langgraph\langgraph\pregel\main.py:3422 leads to a deployment action (irreversible) with no Pre-Node guarding it (strength 0.0).
+5. src\agents\result.py:392
+     Risk:                Decision point (loop) at src\agents\result.py:392 leads to a deployment action (irreversible) with a weak Pre-Node guarding it (strength 0.6).
      Recommended Action:  Add or strengthen a Pre-Node (validation/authorization/approval) immediately before this decision point.
      Business Impact:     criticality=2.00, governed=False
 
@@ -135,17 +136,17 @@ CRITICAL FINDINGS
 GOVERNANCE GAPS SUMMARY
 ════════════════════════════════════════════════════════════════════════════════
 
-Critical Governance Gaps:            101
-  ├─ Ungoverned Decision Point    73
-  ├─ Ungated Irreversible Action  27
-  └─ Missing Pre Node             1
+Critical Governance Gaps:            128
+  ├─ Ungoverned Decision Point    97
+  ├─ Ungated Irreversible Action  24
+  └─ Missing Pre Node             7
 
-High Governance Gaps:                2
-Medium Governance Gaps:              906
+High Governance Gaps:                13
+Medium Governance Gaps:              2177
 
-Agent Handover Gaps:                 31 / 38 ungoverned
-Cluster Governance Gaps:             6
-Terminal States (Silent Failures):   94
+Agent Handover Gaps:                 1 / 1 ungoverned
+Cluster Governance Gaps:             0
+Terminal States (Silent Failures):   156
 
 ════════════════════════════════════════════════════════════════════════════════
 GOVERNANCE THEATRE
@@ -157,40 +158,40 @@ No governance theatre detected.
 DRIFT CLASS DETECTIONS
 ════════════════════════════════════════════════════════════════════════════════
 
-CLUSTER-HANDOVER                                         37 detection(s)  (HIGH 37)
-DC-E13 — Propagating Corruption                33 detection(s)  (HIGH 32, MEDIUM 1)
-DC-E14 — Substrate Contamination               2 detection(s)  (HIGH 2)
-DC-E3 — Signal Corruption                     1 detection(s)  (HIGH 1)
+CLUSTER-HANDOVER                                         1 detection(s)  (HIGH 1)
+DC-E13 — Propagating Corruption                3 detection(s)  (HIGH 2, MEDIUM 1)
 DC-I11 — Evaluative Decoupling                 1 detection(s)  (MEDIUM 1)
 DC-S3 — Emergent Misalignment                 1 detection(s)  (HIGH 1)
 
 Behavioural Domains Affected:
-  ├─ Other                    37 detection(s)
-  ├─ AI                       35 detection(s)
-  ├─ Infrastructure           2 detection(s)
-  └─ Multi-Agent / Cluster    1 detection(s)
+  ├─ AI                       4 detection(s)
+  ├─ Multi-Agent / Cluster    1 detection(s)
+  └─ Other                    1 detection(s)
 
 ════════════════════════════════════════════════════════════════════════════════
 GOVERNANCE RECOMMENDATIONS
 ════════════════════════════════════════════════════════════════════════════════
 
-Immediate Actions (Critical): 28 items
-  1. Define what must be confirmed before this action executes. Define what happens if conditions are not met. — libs\cli\langgraph_cli\templates.py:114
-  2. Define what must be confirmed before this action executes. Define what happens if conditions are not met. — libs\checkpoint\langgraph\checkpoint\memory\__init__.py:660 [DC-E14]
-  3. Define what must be checked before this AI call. What conditions must be met? What must the AI never return? — libs\sdk-py\integration\graph\tools_agent.py:92 [DC-E3]
-  4. Define what must be confirmed before this action executes. Define what happens if conditions are not met. — libs\cli\langgraph_cli\archive.py:138
-  5. Define what must be confirmed before this action executes. Define what happens if conditions are not met. — libs\checkpoint\langgraph\checkpoint\memory\__init__.py:664 [DC-E14]
+Immediate Actions (Critical): 31 items
+  1. Define what must be confirmed before this action executes. Define what happens if conditions are not met. — src\agents\extensions\experimental\codex\output_schema_file.py:41
+  2. Define what must be confirmed before this action executes. Define what happens if conditions are not met. — .github\scripts\run_integration_tests.py:82
+  3. Define what must be checked before this AI call. What conditions must be met? What must the AI never return? — integration_tests\conftest.py:245
+  4. Define what must be checked before this AI call. What conditions must be met? What must the AI never return? — integration_tests\_contract_support.py:372
+  5. Define what must be checked before this AI call. What conditions must be met? What must the AI never return? — integration_tests\_contract_support.py:1931
 
-Short-term (High): 2 items
-  1. Define the severity and required authorisation level for this output. — libs\sdk-py\integration\graph\tools_agent.py:92 [DC-E3]
-  2. Define the severity and required authorisation level for this output. — libs\prebuilt\langgraph\prebuilt\chat_agent_executor.py:580
+Short-term (High): 13 items
+  1. Define the severity and required authorisation level for this output. — integration_tests\conftest.py:245
+  2. Define the severity and required authorisation level for this output. — integration_tests\_contract_support.py:372
+  3. Define the severity and required authorisation level for this output. — integration_tests\_contract_support.py:373
+  4. Define the severity and required authorisation level for this output. — integration_tests\_contract_support.py:1931
+  5. Define the severity and required authorisation level for this output. — integration_tests\_contract_support.py:2026
 
-Medium-term (Medium): 79 items
-  1. Formalise this check as an Invariant with CANNOT_BE_BYPASSED: TRUE. — libs\prebuilt\langgraph\prebuilt\tool_node.py:946
-  2. Formalise this check as an Invariant with CANNOT_BE_BYPASSED: TRUE. — libs\prebuilt\langgraph\prebuilt\tool_node.py:1093
-  3. Formalise this check as an Invariant with CANNOT_BE_BYPASSED: TRUE. — libs\checkpoint\langgraph\checkpoint\serde\jsonplus.py:316
-  4. Formalise this check as an Invariant with CANNOT_BE_BYPASSED: TRUE. — libs\checkpoint\langgraph\store\base\__init__.py:919
-  5. Formalise this check as an Invariant with CANNOT_BE_BYPASSED: TRUE. — libs\checkpoint\langgraph\store\base\__init__.py:1180
+Medium-term (Medium): 367 items
+  1. Formalise this check as an Invariant with CANNOT_BE_BYPASSED: TRUE. — src\agents\items.py:871
+  2. Formalise this check as an Invariant with CANNOT_BE_BYPASSED: TRUE. — src\agents\tool.py:2431
+  3. Formalise this check as an Invariant with CANNOT_BE_BYPASSED: TRUE. — src\agents\extensions\sandbox\vercel\sandbox.py:807
+  4. Formalise this check as an Invariant with CANNOT_BE_BYPASSED: TRUE. — src\agents\extensions\sandbox\vercel\sandbox.py:821
+  5. Formalise this check as an Invariant with CANNOT_BE_BYPASSED: TRUE. — src\agents\run_internal\tool_planning.py:285
 
 Implementation order is based on:
   - Decision criticality (business_impact x blast_radius x irreversibility)
